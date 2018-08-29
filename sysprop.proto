@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2018 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package sysprop;
+
+enum Scope {
+  Public = 0;
+  System = 1;
+  Internal = 2;
+}
+
+enum Owner {
+  Platform = 0;
+  Vendor = 1;
+  Odm = 2;
+}
+
+enum Type {
+  Boolean = 0;
+  Integer = 1;
+  Long = 2;
+  Double = 3;
+  String = 4;
+  Enum = 5;
+
+  BooleanList = 20;
+  IntegerList = 21;
+  LongList = 22;
+  DoubleList = 24;
+  StringList = 25;
+  EnumList = 26;
+}
+
+message Property {
+  required string name = 1;
+  required Type type = 2;
+  required Scope scope = 3;
+  optional bool readonly = 4;
+  optional string enum_values = 50;
+}
+
+message Properties {
+  required Owner owner = 1;
+  required string module = 2;
+  optional string prefix = 3;
+  repeated Property prop = 4;
+}
