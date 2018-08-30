@@ -49,15 +49,9 @@ constexpr const char* kJavaParsersAndFormatters =
     R"(private static Boolean tryParseBoolean(String str) {
     switch (str.toLowerCase()) {
         case "1":
-        case "y":
-        case "yes":
-        case "on":
         case "true":
             return Boolean.TRUE;
         case "0":
-        case "n":
-        case "no":
-        case "off":
         case "false":
             return Boolean.FALSE;
         default:
