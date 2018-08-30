@@ -391,7 +391,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
       writer.Write("}\n\n");
     }
   }
-  writer.Write("}  // namespace\n");
+  writer.Write("}  // namespace\n\n");
 
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
 
@@ -429,7 +429,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
     }
   }
 
-  writer.Write("\n}  // namespace %s\n\n", cpp_namespace.c_str());
+  writer.Write("\n}  // namespace %s\n", cpp_namespace.c_str());
 
   *source_result = writer.Code();
 
