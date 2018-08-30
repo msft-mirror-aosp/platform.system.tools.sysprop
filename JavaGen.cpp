@@ -138,7 +138,6 @@ private static <T> String formatList(List<T> list) {
 
     return joiner.toString();
 }
-
 )";
 
 constexpr const char* kJniLibraryIncludes =
