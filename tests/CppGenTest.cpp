@@ -172,8 +172,8 @@ template <typename T> constexpr bool is_vector<std::vector<T>> = true;
 template <typename T> std::optional<T> DoParse(const char* str);
 
 template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
-    static constexpr const char* kYes[] = {"1", "on", "true", "y", "yes"};
-    static constexpr const char* kNo[] = {"0", "off", "false", "n", "no"};
+    static constexpr const char* kYes[] = {"1", "true"};
+    static constexpr const char* kNo[] = {"0", "false"};
 
     for (const char* yes : kYes) {
         if (strcasecmp(yes, str) == 0) return std::make_optional(true);
