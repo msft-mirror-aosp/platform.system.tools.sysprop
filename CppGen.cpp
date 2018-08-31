@@ -45,6 +45,7 @@ constexpr const char* kCppHeaderIncludes =
 constexpr const char* kCppSourceIncludes =
     R"(#include <cstring>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 #include <dlfcn.h>
@@ -61,8 +62,6 @@ constexpr const char* kCppParsersAndFormatters =
     R"(template <typename T> constexpr bool is_vector = false;
 
 template <typename T> constexpr bool is_vector<std::vector<T>> = true;
-
-template <typename T> std::optional<T> DoParse(const char* str);
 
 template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
     static constexpr const char* kYes[] = {"1", "true"};
@@ -147,10 +146,6 @@ template <typename T> inline std::optional<T> TryParse(const char* str) {
     return value ? "true" : "false";
 }
 
-[[maybe_unused]] std::string FormatValue(std::string value) {
-    return value;
-}
-
 template <typename T>
 [[maybe_unused]] std::string FormatValue(const std::vector<T>& value) {
     if (value.empty()) return "";
@@ -159,13 +154,20 @@ template <typename T>
 
     for (auto&& element : value) {
         if (ret.empty()) ret.push_back(',');
-        ret += FormatValue(element);
+        if constexpr(std::is_same_v<T, std::string>) {
+            ret += element;
+        } else {
+            ret += FormatValue(element);
+        }
     }
 
     return ret;
 }
 
-namespace libc {
+)";
+
+constexpr const char* kCppLibcUtil =
+    R"(namespace libc {
 
 struct prop_info;
 
@@ -320,12 +322,12 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
   writer.Write("#include \"%s.h\"\n\n", GetModuleName(props).c_str());
   writer.Write("%s", kCppSourceIncludes);
 
-  writer.Write("namespace {\n\n");
-  writer.Write("%s", kCppParsersAndFormatters);
-
-  bool using_emitted = false;
-
   std::string cpp_namespace = GetCppNamespace(props);
+
+  writer.Write("namespace {\n\n");
+  writer.Write("using namespace %s;\n\n", cpp_namespace.c_str());
+  writer.Write(
+      "template <typename T> std::optional<T> DoParse(const char* str);\n\n");
 
   for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
@@ -333,13 +335,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
       continue;
     }
 
-    if (!using_emitted) {
-      writer.Write("using namespace %s;\n\n", cpp_namespace.c_str());
-      using_emitted = true;
-    }
-
     std::string prop_id = PropNameToIdentifier(prop.name());
-    std::string prefix = (prop.readonly() ? "ro." : "") + props.prefix();
     std::string enum_name = GetCppEnumName(prop);
 
     writer.Write("constexpr const std::pair<const char*, %s> %s_list[] = {\n",
@@ -382,15 +378,23 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
       writer.Write("}\n");
       writer.Dedent();
       writer.Write("}\n");
+
+      std::string prefix = (prop.readonly() ? "ro." : "") + props.prefix();
+      if (!prefix.empty() && prefix.back() != '.') prefix.push_back('.');
+
       writer.Write(
           "LOG(FATAL) << \"Invalid value \" << "
           "static_cast<std::int32_t>(value) << "
-          "\" for property \" << %s%s;\n",
+          "\" for property \" << \"%s%s\";\n",
           prefix.c_str(), prop_id.c_str());
+
+      writer.Write("__builtin_unreachable();\n");
       writer.Dedent();
       writer.Write("}\n\n");
     }
   }
+  writer.Write("%s", kCppParsersAndFormatters);
+  writer.Write("%s", kCppLibcUtil);
   writer.Write("}  // namespace\n\n");
 
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
@@ -422,8 +426,9 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
       writer.Indent();
       writer.Write(
           "return libc::system_property_set(\"%s%s\", "
-          "FormatValue(value).c_str()) == 0;\n",
-          prefix.c_str(), prop.name().c_str());
+          "%s.c_str()) == 0;\n",
+          prefix.c_str(), prop.name().c_str(),
+          prop.type() == sysprop::String ? "value" : "FormatValue(value)");
       writer.Dedent();
       writer.Write("}\n");
     }
