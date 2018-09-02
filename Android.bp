@@ -32,3 +32,11 @@ cc_binary_host {
     defaults: ["sysprop-defaults"],
     srcs: ["JavaGen.cpp", "JavaMain.cpp"],
 }
+
+cc_test_host {
+    name: "sysprop_test",
+    defaults: ["sysprop-defaults"],
+    srcs: ["CppGen.cpp",
+           "JavaGen.cpp",
+           "tests/*.cpp"],
+}

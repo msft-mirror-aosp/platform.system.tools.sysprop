@@ -65,8 +65,8 @@ template <typename T> constexpr bool is_vector<std::vector<T>> = true;
 template <typename T> std::optional<T> DoParse(const char* str);
 
 template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
-    static constexpr const char* kYes[] = {"1", "on", "true", "y", "yes"};
-    static constexpr const char* kNo[] = {"0", "off", "false", "n", "no"};
+    static constexpr const char* kYes[] = {"1", "true"};
+    static constexpr const char* kNo[] = {"0", "false"};
 
     for (const char* yes : kYes) {
         if (strcasecmp(yes, str) == 0) return std::make_optional(true);
@@ -391,7 +391,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
       writer.Write("}\n\n");
     }
   }
-  writer.Write("}  // namespace\n");
+  writer.Write("}  // namespace\n\n");
 
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
 
@@ -429,7 +429,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
     }
   }
 
-  writer.Write("\n}  // namespace %s\n\n", cpp_namespace.c_str());
+  writer.Write("\n}  // namespace %s\n", cpp_namespace.c_str());
 
   *source_result = writer.Code();
 
