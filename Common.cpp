@@ -111,7 +111,7 @@ bool ValidateProp(const sysprop::Properties& props,
         android::base::StartsWith(full_name, "odm.")) {
       if (err)
         *err = "Prop \"" + prop.name() +
-               "\" owned by platform cannot have vendor. or oem. namespace";
+               "\" owned by platform cannot have vendor. or odm. namespace";
       return false;
     }
   }
