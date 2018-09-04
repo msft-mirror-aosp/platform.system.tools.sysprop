@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <string>
 
-#include <android-base/scopeguard.h>
 #include <android-base/test_utils.h>
 #include <gtest/gtest.h>
 
