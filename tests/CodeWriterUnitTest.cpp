@@ -16,7 +16,6 @@
 
 #include <string>
 
-#include <android-base/scopeguard.h>
 #include <android-base/test_utils.h>
 #include <gtest/gtest.h>
 
@@ -24,9 +23,9 @@
 
 namespace {
 
-inline constexpr const char* kIndent = "    ";
+constexpr const char* kIndent = "    ";
 
-inline constexpr const char* kHelloWorld =
+constexpr const char* kHelloWorld =
     R"(#include <stdio.h>
 
 int main() {
