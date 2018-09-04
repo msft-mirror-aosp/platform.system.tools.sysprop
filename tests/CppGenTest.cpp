@@ -34,17 +34,19 @@ prop {
     name: "test_double"
     type: Double
     scope: Internal
+    readonly: false
 }
 prop {
     name: "test_int"
     type: Integer
     scope: Public
+    readonly: false
 }
 prop {
     name: "test.string"
     type: String
     scope: System
-    readonly: true
+    readonly: false
 }
 
 prop {
@@ -58,22 +60,26 @@ prop {
     name: "test_BOOLeaN"
     type: Boolean
     scope: Public
+    readonly: false
 }
 prop {
     name: "longlonglongLONGLONGlongLONGlongLONG"
     type: Long
     scope: System
+    readonly: false
 }
 
 prop {
     name: "test_double_list"
     type: DoubleList
     scope: Internal
+    readonly: false
 }
 prop {
     name: "test_list_int"
     type: IntegerList
     scope: Public
+    readonly: false
 }
 prop {
     name: "test.strlist"
@@ -87,6 +93,7 @@ prop {
     type: EnumList
     enum_values: "enu|mva|lue"
     scope: Internal
+    readonly: false
 }
 )";
 
@@ -104,10 +111,13 @@ constexpr const char* kExpectedHeaderOutput =
 namespace android::os::PlatformProperties {
 
 std::optional<double> test_double();
+bool test_double(const double& value);
 
 std::optional<std::int32_t> test_int();
+bool test_int(const std::int32_t& value);
 
 std::optional<std::string> test_string();
+bool test_string(const std::string& value);
 
 enum class test_enum_values {
     a,
@@ -123,12 +133,16 @@ std::optional<test_enum_values> test_enum();
 bool test_enum(const test_enum_values& value);
 
 std::optional<bool> test_BOOLeaN();
+bool test_BOOLeaN(const bool& value);
 
 std::optional<std::int64_t> longlonglongLONGLONGlongLONGlongLONG();
+bool longlonglongLONGLONGlongLONGlongLONG(const std::int64_t& value);
 
 std::optional<std::vector<double>> test_double_list();
+bool test_double_list(const std::vector<double>& value);
 
 std::optional<std::vector<std::int32_t>> test_list_int();
+bool test_list_int(const std::vector<std::int32_t>& value);
 
 std::optional<std::vector<std::string>> test_strlist();
 bool test_strlist(const std::vector<std::string>& value);
@@ -140,6 +154,7 @@ enum class el_values {
 };
 
 std::optional<std::vector<el_values>> el();
+bool el(const std::vector<el_values>& value);
 
 }  // namespace android::os::PlatformProperties
 
@@ -153,6 +168,7 @@ constexpr const char* kExpectedSourceOutput =
 
 #include <cstring>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 #include <dlfcn.h>
@@ -165,11 +181,69 @@ constexpr const char* kExpectedSourceOutput =
 
 namespace {
 
+using namespace android::os::PlatformProperties;
+
+template <typename T> std::optional<T> DoParse(const char* str);
+
+constexpr const std::pair<const char*, test_enum_values> test_enum_list[] = {
+    {"a", test_enum_values::a},
+    {"b", test_enum_values::b},
+    {"c", test_enum_values::c},
+    {"D", test_enum_values::D},
+    {"e", test_enum_values::e},
+    {"f", test_enum_values::f},
+    {"G", test_enum_values::G},
+};
+
+template <>
+std::optional<test_enum_values> DoParse(const char* str) {
+    for (auto [name, val] : test_enum_list) {
+        if (strcmp(str, name) == 0) {
+            return val;
+        }
+    }
+    return std::nullopt;
+}
+
+std::string FormatValue(test_enum_values value) {
+    for (auto [name, val] : test_enum_list) {
+        if (val == value) {
+            return name;
+        }
+    }
+    LOG(FATAL) << "Invalid value " << static_cast<std::int32_t>(value) << " for property " << "android.os.test_enum";
+    __builtin_unreachable();
+}
+
+constexpr const std::pair<const char*, el_values> el_list[] = {
+    {"enu", el_values::enu},
+    {"mva", el_values::mva},
+    {"lue", el_values::lue},
+};
+
+template <>
+std::optional<el_values> DoParse(const char* str) {
+    for (auto [name, val] : el_list) {
+        if (strcmp(str, name) == 0) {
+            return val;
+        }
+    }
+    return std::nullopt;
+}
+
+std::string FormatValue(el_values value) {
+    for (auto [name, val] : el_list) {
+        if (val == value) {
+            return name;
+        }
+    }
+    LOG(FATAL) << "Invalid value " << static_cast<std::int32_t>(value) << " for property " << "android.os.el";
+    __builtin_unreachable();
+}
+
 template <typename T> constexpr bool is_vector = false;
 
 template <typename T> constexpr bool is_vector<std::vector<T>> = true;
-
-template <typename T> std::optional<T> DoParse(const char* str);
 
 template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
     static constexpr const char* kYes[] = {"1", "true"};
@@ -254,10 +328,6 @@ template <typename T> inline std::optional<T> TryParse(const char* str) {
     return value ? "true" : "false";
 }
 
-[[maybe_unused]] std::string FormatValue(std::string value) {
-    return value;
-}
-
 template <typename T>
 [[maybe_unused]] std::string FormatValue(const std::vector<T>& value) {
     if (value.empty()) return "";
@@ -266,7 +336,11 @@ template <typename T>
 
     for (auto&& element : value) {
         if (ret.empty()) ret.push_back(',');
-        ret += FormatValue(element);
+        if constexpr(std::is_same_v<T, std::string>) {
+            ret += element;
+        } else {
+            ret += FormatValue(element);
+        }
     }
 
     return ret;
@@ -313,67 +387,32 @@ std::optional<T> GetProp(const char* key) {
 
 }  // namespace libc
 
-using namespace android::os::PlatformProperties;
-
-constexpr const std::pair<const char*, test_enum_values> test_enum_list[] = {
-    {"a", test_enum_values::a},
-    {"b", test_enum_values::b},
-    {"c", test_enum_values::c},
-    {"D", test_enum_values::D},
-    {"e", test_enum_values::e},
-    {"f", test_enum_values::f},
-    {"G", test_enum_values::G},
-};
-
-template <>
-std::optional<test_enum_values> DoParse(const char* str) {
-    for (auto [name, val] : test_enum_list) {
-        if (strcmp(str, name) == 0) {
-            return val;
-        }
-    }
-    return std::nullopt;
-}
-
-std::string FormatValue(test_enum_values value) {
-    for (auto [name, val] : test_enum_list) {
-        if (val == value) {
-            return name;
-        }
-    }
-    LOG(FATAL) << "Invalid value " << static_cast<std::int32_t>(value) << " for property " << android.ostest_enum;
-}
-
-constexpr const std::pair<const char*, el_values> el_list[] = {
-    {"enu", el_values::enu},
-    {"mva", el_values::mva},
-    {"lue", el_values::lue},
-};
-
-template <>
-std::optional<el_values> DoParse(const char* str) {
-    for (auto [name, val] : el_list) {
-        if (strcmp(str, name) == 0) {
-            return val;
-        }
-    }
-    return std::nullopt;
-}
-
 }  // namespace
 
 namespace android::os::PlatformProperties {
 
 std::optional<double> test_double() {
-    return libc::GetProp<double>("ro.android.os.test_double");
+    return libc::GetProp<double>("android.os.test_double");
+}
+
+bool test_double(const double& value) {
+    return libc::system_property_set("android.os.test_double", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int32_t> test_int() {
-    return libc::GetProp<std::int32_t>("ro.android.os.test_int");
+    return libc::GetProp<std::int32_t>("android.os.test_int");
+}
+
+bool test_int(const std::int32_t& value) {
+    return libc::system_property_set("android.os.test_int", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::string> test_string() {
-    return libc::GetProp<std::string>("ro.android.os.test.string");
+    return libc::GetProp<std::string>("android.os.test.string");
+}
+
+bool test_string(const std::string& value) {
+    return libc::system_property_set("android.os.test.string", value.c_str()) == 0;
 }
 
 std::optional<test_enum_values> test_enum() {
@@ -385,19 +424,35 @@ bool test_enum(const test_enum_values& value) {
 }
 
 std::optional<bool> test_BOOLeaN() {
-    return libc::GetProp<bool>("ro.android.os.test_BOOLeaN");
+    return libc::GetProp<bool>("android.os.test_BOOLeaN");
+}
+
+bool test_BOOLeaN(const bool& value) {
+    return libc::system_property_set("android.os.test_BOOLeaN", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int64_t> longlonglongLONGLONGlongLONGlongLONG() {
-    return libc::GetProp<std::int64_t>("ro.android.os.longlonglongLONGLONGlongLONGlongLONG");
+    return libc::GetProp<std::int64_t>("android.os.longlonglongLONGLONGlongLONGlongLONG");
+}
+
+bool longlonglongLONGLONGlongLONGlongLONG(const std::int64_t& value) {
+    return libc::system_property_set("android.os.longlonglongLONGLONGlongLONGlongLONG", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<double>> test_double_list() {
-    return libc::GetProp<std::vector<double>>("ro.android.os.test_double_list");
+    return libc::GetProp<std::vector<double>>("android.os.test_double_list");
+}
+
+bool test_double_list(const std::vector<double>& value) {
+    return libc::system_property_set("android.os.test_double_list", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<std::int32_t>> test_list_int() {
-    return libc::GetProp<std::vector<std::int32_t>>("ro.android.os.test_list_int");
+    return libc::GetProp<std::vector<std::int32_t>>("android.os.test_list_int");
+}
+
+bool test_list_int(const std::vector<std::int32_t>& value) {
+    return libc::system_property_set("android.os.test_list_int", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<std::string>> test_strlist() {
@@ -409,7 +464,11 @@ bool test_strlist(const std::vector<std::string>& value) {
 }
 
 std::optional<std::vector<el_values>> el() {
-    return libc::GetProp<std::vector<el_values>>("ro.android.os.el");
+    return libc::GetProp<std::vector<el_values>>("android.os.el");
+}
+
+bool el(const std::vector<el_values>& value) {
+    return libc::system_property_set("android.os.el", FormatValue(value).c_str()) == 0;
 }
 
 }  // namespace android::os::PlatformProperties
