@@ -28,15 +28,16 @@
 namespace {
 
 struct Arguments {
-  std::string input_file_path_;
-  std::string header_output_dir_;
-  std::string source_output_dir_;
+  std::string input_file_path;
+  std::string header_output_dir;
+  std::string source_output_dir;
+  std::string include_name;
 };
 
 [[noreturn]] void PrintUsage(const char* exe_name) {
   std::printf(
       "Usage: %s [--header-output-dir dir] [--source-output-dir dir] "
-      "sysprop_file \n",
+      "[--include-name name] sysprop_file\n",
       exe_name);
   std::exit(EXIT_FAILURE);
 }
@@ -46,6 +47,7 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
     static struct option long_options[] = {
         {"header-output-dir", required_argument, 0, 'h'},
         {"source-output-dir", required_argument, 0, 's'},
+        {"include-name", required_argument, 0, 'n'},
     };
 
     int opt = getopt_long_only(argc, argv, "", long_options, nullptr);
@@ -53,10 +55,13 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
 
     switch (opt) {
       case 'h':
-        args->header_output_dir_ = optarg;
+        args->header_output_dir = optarg;
         break;
       case 's':
-        args->source_output_dir_ = optarg;
+        args->source_output_dir = optarg;
+        break;
+      case 'n':
+        args->include_name = optarg;
         break;
       default:
         PrintUsage(argv[0]);
@@ -73,9 +78,9 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
     return false;
   }
 
-  args->input_file_path_ = argv[optind];
-  if (args->header_output_dir_.empty()) args->header_output_dir_ = ".";
-  if (args->source_output_dir_.empty()) args->source_output_dir_ = ".";
+  args->input_file_path = argv[optind];
+  if (args->header_output_dir.empty()) args->header_output_dir = ".";
+  if (args->source_output_dir.empty()) args->source_output_dir = ".";
 
   return true;
 }
@@ -90,9 +95,9 @@ int main(int argc, char* argv[]) {
     PrintUsage(argv[0]);
   }
 
-  if (!GenerateCppFiles(args.input_file_path_, args.header_output_dir_,
-                        args.source_output_dir_, &err)) {
+  if (!GenerateCppFiles(args.input_file_path, args.header_output_dir,
+                        args.source_output_dir, args.include_name, &err)) {
     LOG(FATAL) << "Error during generating cpp sysprop from "
-               << args.input_file_path_ << ": " << err;
+               << args.input_file_path << ": " << err;
   }
 }

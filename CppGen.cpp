@@ -221,7 +221,8 @@ std::string GetCppNamespace(const sysprop::Properties& props);
 bool GenerateHeader(const sysprop::Properties& props,
                     std::string* header_result, std::string* err);
 bool GenerateSource(const sysprop::Properties& props,
-                    std::string* source_result, std::string* err);
+                    const std::string& include_name, std::string* source_result,
+                    std::string* err);
 
 std::string GetHeaderIncludeGuardName(const sysprop::Properties& props) {
   return "SYSPROPGEN_" + std::regex_replace(props.module(), kRegexDot, "_") +
@@ -315,11 +316,12 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
   return true;
 }
 
-bool GenerateSource(const sysprop::Properties& props, std::string* source_result,
+bool GenerateSource(const sysprop::Properties& props,
+                    const std::string& include_name, std::string* source_result,
                     [[maybe_unused]] std::string* err) {
   CodeWriter writer(kIndent);
   writer.Write("%s", kGeneratedFileFooterComments);
-  writer.Write("#include \"%s.h\"\n\n", GetModuleName(props).c_str());
+  writer.Write("#include <%s>\n\n", include_name.c_str());
   writer.Write("%s", kCppSourceIncludes);
 
   std::string cpp_namespace = GetCppNamespace(props);
@@ -445,7 +447,8 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
 
 bool GenerateCppFiles(const std::string& input_file_path,
                       const std::string& header_output_dir,
-                      const std::string& source_output_dir, std::string* err) {
+                      const std::string& source_output_dir,
+                      const std::string& include_name, std::string* err) {
   sysprop::Properties props;
 
   if (!ParseProps(input_file_path, &props, err)) {
@@ -458,14 +461,14 @@ bool GenerateCppFiles(const std::string& input_file_path,
     return false;
   }
 
-  if (!GenerateSource(props, &source_result, err)) {
+  if (!GenerateSource(props, include_name, &source_result, err)) {
     return false;
   }
 
-  std::string header_path =
-      header_output_dir + "/" + GetModuleName(props) + ".h";
-  std::string source_path =
-      source_output_dir + "/" + GetModuleName(props) + ".cpp";
+  std::string output_basename = android::base::Basename(input_file_path);
+
+  std::string header_path = header_output_dir + "/" + output_basename + ".h";
+  std::string source_path = source_output_dir + "/" + output_basename + ".cpp";
 
   if (!IsDirectory(header_output_dir) && !CreateDirectories(header_output_dir)) {
     *err = "Creating directory to " + header_output_dir +
