@@ -172,8 +172,8 @@ constexpr const char* kExpectedSourceOutput =
 #include <type_traits>
 #include <utility>
 
-#include <dlfcn.h>
 #include <strings.h>
+#include <sys/system_properties.h>
 
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
@@ -347,129 +347,99 @@ template <typename T>
     return ret;
 }
 
-namespace libc {
-
-struct prop_info;
-
-const prop_info* (*system_property_find)(const char* name);
-
-void (*system_property_read_callback)(
-    const prop_info* pi,
-    void (*callback)(void* cookie, const char* name, const char* value, std::uint32_t serial),
-    void* cookie
-);
-
-int (*system_property_set)(const char* key, const char* value);
-
-void* handle;
-
-__attribute__((constructor)) void load_libc_functions() {
-    handle = dlopen("libc.so", RTLD_LAZY | RTLD_NOLOAD);
-
-    system_property_find = reinterpret_cast<decltype(system_property_find)>(dlsym(handle, "__system_property_find"));
-    system_property_read_callback = reinterpret_cast<decltype(system_property_read_callback)>(dlsym(handle, "__system_property_read_callback"));
-    system_property_set = reinterpret_cast<decltype(system_property_set)>(dlsym(handle, "__system_property_set"));
-}
-
-__attribute__((destructor)) void release_libc_functions() {
-    dlclose(handle);
-}
-
 template <typename T>
 std::optional<T> GetProp(const char* key) {
-    auto pi = system_property_find(key);
+    auto pi = __system_property_find(key);
     if (pi == nullptr) return std::nullopt;
     std::optional<T> ret;
-    system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
+    __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
         *static_cast<std::optional<T>*>(cookie) = TryParse<T>(value);
     }, &ret);
     return ret;
 }
-
-}  // namespace libc
 
 }  // namespace
 
 namespace android::os::PlatformProperties {
 
 std::optional<double> test_double() {
-    return libc::GetProp<double>("android.os.test_double");
+    return GetProp<double>("android.os.test_double");
 }
 
 bool test_double(const double& value) {
-    return libc::system_property_set("android.os.test_double", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test_double", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int32_t> test_int() {
-    return libc::GetProp<std::int32_t>("android.os.test_int");
+    return GetProp<std::int32_t>("android.os.test_int");
 }
 
 bool test_int(const std::int32_t& value) {
-    return libc::system_property_set("android.os.test_int", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test_int", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::string> test_string() {
-    return libc::GetProp<std::string>("android.os.test.string");
+    return GetProp<std::string>("android.os.test.string");
 }
 
 bool test_string(const std::string& value) {
-    return libc::system_property_set("android.os.test.string", value.c_str()) == 0;
+    return __system_property_set("android.os.test.string", value.c_str()) == 0;
 }
 
 std::optional<test_enum_values> test_enum() {
-    return libc::GetProp<test_enum_values>("android.os.test.enum");
+    return GetProp<test_enum_values>("android.os.test.enum");
 }
 
 bool test_enum(const test_enum_values& value) {
-    return libc::system_property_set("android.os.test.enum", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test.enum", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<bool> test_BOOLeaN() {
-    return libc::GetProp<bool>("android.os.test_BOOLeaN");
+    return GetProp<bool>("android.os.test_BOOLeaN");
 }
 
 bool test_BOOLeaN(const bool& value) {
-    return libc::system_property_set("android.os.test_BOOLeaN", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test_BOOLeaN", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int64_t> longlonglongLONGLONGlongLONGlongLONG() {
-    return libc::GetProp<std::int64_t>("android.os.longlonglongLONGLONGlongLONGlongLONG");
+    return GetProp<std::int64_t>("android.os.longlonglongLONGLONGlongLONGlongLONG");
 }
 
 bool longlonglongLONGLONGlongLONGlongLONG(const std::int64_t& value) {
-    return libc::system_property_set("android.os.longlonglongLONGLONGlongLONGlongLONG", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.longlonglongLONGLONGlongLONGlongLONG", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<double>> test_double_list() {
-    return libc::GetProp<std::vector<double>>("android.os.test_double_list");
+    return GetProp<std::vector<double>>("android.os.test_double_list");
 }
 
 bool test_double_list(const std::vector<double>& value) {
-    return libc::system_property_set("android.os.test_double_list", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test_double_list", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<std::int32_t>> test_list_int() {
-    return libc::GetProp<std::vector<std::int32_t>>("android.os.test_list_int");
+    return GetProp<std::vector<std::int32_t>>("android.os.test_list_int");
 }
 
 bool test_list_int(const std::vector<std::int32_t>& value) {
-    return libc::system_property_set("android.os.test_list_int", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test_list_int", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<std::string>> test_strlist() {
-    return libc::GetProp<std::vector<std::string>>("android.os.test.strlist");
+    return GetProp<std::vector<std::string>>("android.os.test.strlist");
 }
 
 bool test_strlist(const std::vector<std::string>& value) {
-    return libc::system_property_set("android.os.test.strlist", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.test.strlist", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::vector<el_values>> el() {
-    return libc::GetProp<std::vector<el_values>>("android.os.el");
+    return GetProp<std::vector<el_values>>("android.os.el");
 }
 
 bool el(const std::vector<el_values>& value) {
-    return libc::system_property_set("android.os.el", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android.os.el", FormatValue(value).c_str()) == 0;
 }
 
 }  // namespace android::os::PlatformProperties

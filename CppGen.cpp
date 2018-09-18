@@ -48,8 +48,8 @@ constexpr const char* kCppSourceIncludes =
 #include <type_traits>
 #include <utility>
 
-#include <dlfcn.h>
 #include <strings.h>
+#include <sys/system_properties.h>
 
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
@@ -164,49 +164,16 @@ template <typename T>
     return ret;
 }
 
-)";
-
-constexpr const char* kCppLibcUtil =
-    R"(namespace libc {
-
-struct prop_info;
-
-const prop_info* (*system_property_find)(const char* name);
-
-void (*system_property_read_callback)(
-    const prop_info* pi,
-    void (*callback)(void* cookie, const char* name, const char* value, std::uint32_t serial),
-    void* cookie
-);
-
-int (*system_property_set)(const char* key, const char* value);
-
-void* handle;
-
-__attribute__((constructor)) void load_libc_functions() {
-    handle = dlopen("libc.so", RTLD_LAZY | RTLD_NOLOAD);
-
-    system_property_find = reinterpret_cast<decltype(system_property_find)>(dlsym(handle, "__system_property_find"));
-    system_property_read_callback = reinterpret_cast<decltype(system_property_read_callback)>(dlsym(handle, "__system_property_read_callback"));
-    system_property_set = reinterpret_cast<decltype(system_property_set)>(dlsym(handle, "__system_property_set"));
-}
-
-__attribute__((destructor)) void release_libc_functions() {
-    dlclose(handle);
-}
-
 template <typename T>
 std::optional<T> GetProp(const char* key) {
-    auto pi = system_property_find(key);
+    auto pi = __system_property_find(key);
     if (pi == nullptr) return std::nullopt;
     std::optional<T> ret;
-    system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
+    __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
         *static_cast<std::optional<T>*>(cookie) = TryParse<T>(value);
     }, &ret);
     return ret;
 }
-
-}  // namespace libc
 
 )";
 
@@ -396,7 +363,6 @@ bool GenerateSource(const sysprop::Properties& props,
     }
   }
   writer.Write("%s", kCppParsersAndFormatters);
-  writer.Write("%s", kCppLibcUtil);
   writer.Write("}  // namespace\n\n");
 
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
@@ -417,7 +383,7 @@ bool GenerateSource(const sysprop::Properties& props,
     writer.Write("std::optional<%s> %s() {\n", prop_type.c_str(),
                  prop_id.c_str());
     writer.Indent();
-    writer.Write("return libc::GetProp<%s>(\"%s%s\");\n", prop_type.c_str(),
+    writer.Write("return GetProp<%s>(\"%s%s\");\n", prop_type.c_str(),
                  prefix.c_str(), prop.name().c_str());
     writer.Dedent();
     writer.Write("}\n");
@@ -427,7 +393,7 @@ bool GenerateSource(const sysprop::Properties& props,
                    prop_type.c_str());
       writer.Indent();
       writer.Write(
-          "return libc::system_property_set(\"%s%s\", "
+          "return __system_property_set(\"%s%s\", "
           "%s.c_str()) == 0;\n",
           prefix.c_str(), prop.name().c_str(),
           prop.type() == sysprop::String ? "value" : "FormatValue(value)");
