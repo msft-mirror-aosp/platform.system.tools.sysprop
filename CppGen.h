@@ -21,6 +21,7 @@
 
 bool GenerateCppFiles(const std::string& input_file_path,
                       const std::string& header_output_dir,
-                      const std::string& source_output_dir, std::string* err);
+                      const std::string& source_output_dir,
+                      const std::string& include_name, std::string* err);
 
 #endif  // SYSTEM_TOOLS_SYSPROP_CPPGEN_H_
