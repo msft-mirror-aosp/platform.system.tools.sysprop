@@ -97,6 +97,7 @@ package com.somecompany;
 
 import android.annotation.SystemApi;
 
+import android.os.SystemProperties;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -105,10 +106,6 @@ import java.util.StringJoiner;
 
 public final class TestProperties {
     private TestProperties () {}
-
-    static {
-        System.loadLibrary("TestProperties_jni");
-    }
 
     private static Boolean tryParseBoolean(String str) {
         switch (str.toLowerCase()) {
@@ -199,23 +196,20 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<Double> test_double() {
-        return Optional.ofNullable(tryParseDouble(native_test_double_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test_double");
+        return Optional.ofNullable(tryParseDouble(value));
     }
-
-    private static native String native_test_double_get();
 
     public static Optional<Integer> test_int() {
-        return Optional.ofNullable(tryParseInteger(native_test_int_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test_int");
+        return Optional.ofNullable(tryParseInteger(value));
     }
-
-    private static native String native_test_int_get();
 
     @SystemApi
     public static Optional<String> test_string() {
-        return Optional.ofNullable(tryParseString(native_test_string_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test.string");
+        return Optional.ofNullable(tryParseString(value));
     }
-
-    private static native String native_test_string_get();
 
     /** @hide */
     public static enum test_enum_values {
@@ -230,57 +224,49 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<test_enum_values> test_enum() {
-        return Optional.ofNullable(tryParseEnum(test_enum_values.class, native_test_enum_get()));
+        String value = SystemProperties.get("com.somecompany.test.enum");
+        return Optional.ofNullable(tryParseEnum(test_enum_values.class, value));
     }
-
-    private static native String native_test_enum_get();
 
     /** @hide */
-    public static boolean test_enum(test_enum_values value) {
-        return native_test_enum_set(value.toString());
+    public static void test_enum(test_enum_values value) {
+        SystemProperties.set("com.somecompany.test.enum", value.toString());
     }
 
-    private static native boolean native_test_enum_set(String str);
 
     public static Optional<Boolean> test_BOOLeaN() {
-        return Optional.ofNullable(tryParseBoolean(native_test_BOOLeaN_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test_BOOLeaN");
+        return Optional.ofNullable(tryParseBoolean(value));
     }
-
-    private static native String native_test_BOOLeaN_get();
 
     @SystemApi
     public static Optional<Long> longlonglongLONGLONGlongLONGlongLONG() {
-        return Optional.ofNullable(tryParseLong(native_longlonglongLONGLONGlongLONGlongLONG_get()));
+        String value = SystemProperties.get("ro.com.somecompany.longlonglongLONGLONGlongLONGlongLONG");
+        return Optional.ofNullable(tryParseLong(value));
     }
-
-    private static native String native_longlonglongLONGLONGlongLONGlongLONG_get();
 
     /** @hide */
     public static Optional<List<Double>> test_double_list() {
-        return Optional.ofNullable(tryParseList(v -> tryParseDouble(v), native_test_double_list_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test_double_list");
+        return Optional.ofNullable(tryParseList(v -> tryParseDouble(v), value));
     }
-
-    private static native String native_test_double_list_get();
 
     public static Optional<List<Integer>> test_list_int() {
-        return Optional.ofNullable(tryParseList(v -> tryParseInteger(v), native_test_list_int_get()));
+        String value = SystemProperties.get("ro.com.somecompany.test_list_int");
+        return Optional.ofNullable(tryParseList(v -> tryParseInteger(v), value));
     }
-
-    private static native String native_test_list_int_get();
 
     @SystemApi
     public static Optional<List<String>> test_strlist() {
-        return Optional.ofNullable(tryParseList(v -> tryParseString(v), native_test_strlist_get()));
+        String value = SystemProperties.get("com.somecompany.test.strlist");
+        return Optional.ofNullable(tryParseList(v -> tryParseString(v), value));
     }
-
-    private static native String native_test_strlist_get();
 
     @SystemApi
-    public static boolean test_strlist(List<String> value) {
-        return native_test_strlist_set(formatList(value));
+    public static void test_strlist(List<String> value) {
+        SystemProperties.set("com.somecompany.test.strlist", formatList(value));
     }
 
-    private static native boolean native_test_strlist_set(String str);
 
     /** @hide */
     public static enum el_values {
@@ -291,178 +277,9 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<List<el_values>> el() {
-        return Optional.ofNullable(tryParseEnumList(el_values.class, native_el_get()));
+        String value = SystemProperties.get("ro.com.somecompany.el");
+        return Optional.ofNullable(tryParseEnumList(el_values.class, value));
     }
-
-    private static native String native_el_get();
-}
-)";
-
-constexpr const char* kExpectedJniOutput =
-    R"(// Generated by the sysprop generator. DO NOT EDIT!
-
-#define LOG_TAG "com.somecompany.TestProperties_jni"
-
-#include <cstdint>
-#include <iterator>
-#include <string>
-
-#include <dlfcn.h>
-#include <jni.h>
-
-#include <android-base/logging.h>
-
-namespace {
-
-constexpr const char* kClassName = "com/somecompany/TestProperties";
-
-namespace libc {
-
-struct prop_info;
-
-const prop_info* (*system_property_find)(const char* name);
-
-void (*system_property_read_callback)(
-    const prop_info* pi,
-    void (*callback)(void* cookie, const char* name, const char* value, std::uint32_t serial),
-    void* cookie
-);
-
-int (*system_property_set)(const char* key, const char* value);
-
-void* handle;
-
-__attribute__((constructor)) void load_libc_functions() {
-    handle = dlopen("libc.so", RTLD_LAZY | RTLD_NOLOAD);
-
-    system_property_find = reinterpret_cast<decltype(system_property_find)>(dlsym(handle, "__system_property_find"));
-    system_property_read_callback = reinterpret_cast<decltype(system_property_read_callback)>(dlsym(handle, "__system_property_read_callback"));
-    system_property_set = reinterpret_cast<decltype(system_property_set)>(dlsym(handle, "__system_property_set"));
-}
-
-__attribute__((destructor)) void release_libc_functions() {
-    dlclose(handle);
-}
-
-jstring GetProp(JNIEnv* env, const char* key) {
-    auto pi = system_property_find(key);
-    if (pi == nullptr) return env->NewStringUTF("");
-    std::string ret;
-    system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
-        *static_cast<std::string*>(cookie) = value;
-    }, &ret);
-    return env->NewStringUTF(ret.c_str());
-}
-
-}  // namespace libc
-
-class ScopedUtfChars {
-  public:
-    ScopedUtfChars(JNIEnv* env, jstring s) : env_(env), string_(s) {
-        utf_chars_ = env->GetStringUTFChars(s, nullptr);
-    }
-
-    ~ScopedUtfChars() {
-        if (utf_chars_) {
-            env_->ReleaseStringUTFChars(string_, utf_chars_);
-        }
-    }
-
-    const char* c_str() const {
-        return utf_chars_;
-    }
-
-  private:
-    JNIEnv* env_;
-    jstring string_;
-    const char* utf_chars_;
-};
-
-jstring JNICALL test_double_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test_double");
-}
-
-jstring JNICALL test_int_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test_int");
-}
-
-jstring JNICALL test_string_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test.string");
-}
-
-jstring JNICALL test_enum_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "com.somecompany.test.enum");
-}
-
-jboolean JNICALL test_enum_set(JNIEnv* env, jclass, jstring str) {
-    return libc::system_property_set("com.somecompany.test.enum", ScopedUtfChars(env, str).c_str()) == 0 ? JNI_TRUE : JNI_FALSE;
-}
-
-jstring JNICALL test_BOOLeaN_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test_BOOLeaN");
-}
-
-jstring JNICALL longlonglongLONGLONGlongLONGlongLONG_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.longlonglongLONGLONGlongLONGlongLONG");
-}
-
-jstring JNICALL test_double_list_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test_double_list");
-}
-
-jstring JNICALL test_list_int_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.test_list_int");
-}
-
-jstring JNICALL test_strlist_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "com.somecompany.test.strlist");
-}
-
-jboolean JNICALL test_strlist_set(JNIEnv* env, jclass, jstring str) {
-    return libc::system_property_set("com.somecompany.test.strlist", ScopedUtfChars(env, str).c_str()) == 0 ? JNI_TRUE : JNI_FALSE;
-}
-
-jstring JNICALL el_get(JNIEnv* env, jclass) {
-    return libc::GetProp(env, "ro.com.somecompany.el");
-}
-
-const JNINativeMethod methods[] = {
-    {"native_test_double_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_double_get)},
-    {"native_test_int_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_int_get)},
-    {"native_test_string_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_string_get)},
-    {"native_test_enum_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_enum_get)},
-    {"native_test_enum_set", "(Ljava/lang/String;)Z", reinterpret_cast<void*>(test_enum_set)},
-    {"native_test_BOOLeaN_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_BOOLeaN_get)},
-    {"native_longlonglongLONGLONGlongLONGlongLONG_get", "()Ljava/lang/String;", reinterpret_cast<void*>(longlonglongLONGLONGlongLONGlongLONG_get)},
-    {"native_test_double_list_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_double_list_get)},
-    {"native_test_list_int_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_list_int_get)},
-    {"native_test_strlist_get", "()Ljava/lang/String;", reinterpret_cast<void*>(test_strlist_get)},
-    {"native_test_strlist_set", "(Ljava/lang/String;)Z", reinterpret_cast<void*>(test_strlist_set)},
-    {"native_el_get", "()Ljava/lang/String;", reinterpret_cast<void*>(el_get)},
-};
-
-}  // namespace
-
-jint JNI_OnLoad(JavaVM* vm, void*) {
-    JNIEnv* env = nullptr;
-
-    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-        LOG(ERROR) << "GetEnv failed";
-        return -1;
-    }
-
-    jclass clazz = env->FindClass(kClassName);
-    if (clazz == nullptr) {
-        LOG(ERROR) << "Cannot find class " << kClassName;
-        return -1;
-    }
-
-    if (env->RegisterNatives(clazz, methods, std::size(methods)) < 0) {
-        LOG(ERROR) << "RegisterNatives failed";
-        return -1;
-    }
-
-    return JNI_VERSION_1_6;
 }
 )";
 
@@ -482,8 +299,7 @@ TEST(SyspropTest, JavaGenTest) {
   TemporaryDir temp_dir;
 
   std::string err;
-  ASSERT_TRUE(
-      GenerateJavaLibrary(temp_file.path, temp_dir.path, temp_dir.path, &err));
+  ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, temp_dir.path, &err));
   ASSERT_TRUE(err.empty());
 
   std::string java_output_path =
@@ -495,13 +311,7 @@ TEST(SyspropTest, JavaGenTest) {
       android::base::ReadFileToString(java_output_path, &java_output, true));
   ASSERT_EQ(java_output, kExpectedJavaOutput);
 
-  std::string jni_output;
-  ASSERT_TRUE(
-      android::base::ReadFileToString(jni_output_path, &jni_output, true));
-  ASSERT_EQ(jni_output, kExpectedJniOutput);
-
   unlink(java_output_path.c_str());
   rmdir((temp_dir.path + "/com/somecompany"s).c_str());
   rmdir((temp_dir.path + "/com"s).c_str());
-  unlink(jni_output_path.c_str());
 }
