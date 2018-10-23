@@ -48,8 +48,8 @@ constexpr const char* kCppSourceIncludes =
 #include <type_traits>
 #include <utility>
 
-#include <dlfcn.h>
 #include <strings.h>
+#include <sys/system_properties.h>
 
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
@@ -164,49 +164,16 @@ template <typename T>
     return ret;
 }
 
-)";
-
-constexpr const char* kCppLibcUtil =
-    R"(namespace libc {
-
-struct prop_info;
-
-const prop_info* (*system_property_find)(const char* name);
-
-void (*system_property_read_callback)(
-    const prop_info* pi,
-    void (*callback)(void* cookie, const char* name, const char* value, std::uint32_t serial),
-    void* cookie
-);
-
-int (*system_property_set)(const char* key, const char* value);
-
-void* handle;
-
-__attribute__((constructor)) void load_libc_functions() {
-    handle = dlopen("libc.so", RTLD_LAZY | RTLD_NOLOAD);
-
-    system_property_find = reinterpret_cast<decltype(system_property_find)>(dlsym(handle, "__system_property_find"));
-    system_property_read_callback = reinterpret_cast<decltype(system_property_read_callback)>(dlsym(handle, "__system_property_read_callback"));
-    system_property_set = reinterpret_cast<decltype(system_property_set)>(dlsym(handle, "__system_property_set"));
-}
-
-__attribute__((destructor)) void release_libc_functions() {
-    dlclose(handle);
-}
-
 template <typename T>
 std::optional<T> GetProp(const char* key) {
-    auto pi = system_property_find(key);
+    auto pi = __system_property_find(key);
     if (pi == nullptr) return std::nullopt;
     std::optional<T> ret;
-    system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
+    __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
         *static_cast<std::optional<T>*>(cookie) = TryParse<T>(value);
     }, &ret);
     return ret;
 }
-
-}  // namespace libc
 
 )";
 
@@ -221,7 +188,8 @@ std::string GetCppNamespace(const sysprop::Properties& props);
 bool GenerateHeader(const sysprop::Properties& props,
                     std::string* header_result, std::string* err);
 bool GenerateSource(const sysprop::Properties& props,
-                    std::string* source_result, std::string* err);
+                    const std::string& include_name, std::string* source_result,
+                    std::string* err);
 
 std::string GetHeaderIncludeGuardName(const sysprop::Properties& props) {
   return "SYSPROPGEN_" + std::regex_replace(props.module(), kRegexDot, "_") +
@@ -315,11 +283,12 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
   return true;
 }
 
-bool GenerateSource(const sysprop::Properties& props, std::string* source_result,
+bool GenerateSource(const sysprop::Properties& props,
+                    const std::string& include_name, std::string* source_result,
                     [[maybe_unused]] std::string* err) {
   CodeWriter writer(kIndent);
   writer.Write("%s", kGeneratedFileFooterComments);
-  writer.Write("#include \"%s.h\"\n\n", GetModuleName(props).c_str());
+  writer.Write("#include <%s>\n\n", include_name.c_str());
   writer.Write("%s", kCppSourceIncludes);
 
   std::string cpp_namespace = GetCppNamespace(props);
@@ -394,7 +363,6 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
     }
   }
   writer.Write("%s", kCppParsersAndFormatters);
-  writer.Write("%s", kCppLibcUtil);
   writer.Write("}  // namespace\n\n");
 
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
@@ -415,7 +383,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
     writer.Write("std::optional<%s> %s() {\n", prop_type.c_str(),
                  prop_id.c_str());
     writer.Indent();
-    writer.Write("return libc::GetProp<%s>(\"%s%s\");\n", prop_type.c_str(),
+    writer.Write("return GetProp<%s>(\"%s%s\");\n", prop_type.c_str(),
                  prefix.c_str(), prop.name().c_str());
     writer.Dedent();
     writer.Write("}\n");
@@ -425,7 +393,7 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
                    prop_type.c_str());
       writer.Indent();
       writer.Write(
-          "return libc::system_property_set(\"%s%s\", "
+          "return __system_property_set(\"%s%s\", "
           "%s.c_str()) == 0;\n",
           prefix.c_str(), prop.name().c_str(),
           prop.type() == sysprop::String ? "value" : "FormatValue(value)");
@@ -445,7 +413,8 @@ bool GenerateSource(const sysprop::Properties& props, std::string* source_result
 
 bool GenerateCppFiles(const std::string& input_file_path,
                       const std::string& header_output_dir,
-                      const std::string& source_output_dir, std::string* err) {
+                      const std::string& source_output_dir,
+                      const std::string& include_name, std::string* err) {
   sysprop::Properties props;
 
   if (!ParseProps(input_file_path, &props, err)) {
@@ -458,14 +427,14 @@ bool GenerateCppFiles(const std::string& input_file_path,
     return false;
   }
 
-  if (!GenerateSource(props, &source_result, err)) {
+  if (!GenerateSource(props, include_name, &source_result, err)) {
     return false;
   }
 
-  std::string header_path =
-      header_output_dir + "/" + GetModuleName(props) + ".h";
-  std::string source_path =
-      source_output_dir + "/" + GetModuleName(props) + ".cpp";
+  std::string output_basename = android::base::Basename(input_file_path);
+
+  std::string header_path = header_output_dir + "/" + output_basename + ".h";
+  std::string source_path = source_output_dir + "/" + output_basename + ".cpp";
 
   if (!IsDirectory(header_output_dir) && !CreateDirectories(header_output_dir)) {
     *err = "Creating directory to " + header_output_dir +
