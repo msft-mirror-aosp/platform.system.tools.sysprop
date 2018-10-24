@@ -20,7 +20,6 @@
 #include <string>
 
 bool GenerateJavaLibrary(const std::string& input_file_path,
-                         const std::string& java_output_dir,
-                         const std::string& jni_output_dir, std::string* err);
+                         const std::string& java_output_dir, std::string* err);
 
 #endif  // SYSTEM_TOOLS_SYSPROP_JAVAGEN_H_
