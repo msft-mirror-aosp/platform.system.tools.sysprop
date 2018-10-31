@@ -28,6 +28,6 @@ std::string GetModuleName(const sysprop::Properties& props);
 bool IsDirectory(const std::string& path);
 bool ParseProps(const std::string& file_path, sysprop::Properties* props,
                 std::string* err);
-std::string PropNameToIdentifier(const std::string& name);
+std::string ApiNameToIdentifier(const std::string& name);
 
 #endif  // SYSTEM_TOOLS_SYSPROP_COMMON_H_

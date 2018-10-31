@@ -28,65 +28,76 @@ namespace {
 constexpr const char* kTestSyspropFile =
     R"(owner: Vendor
 module: "com.somecompany.TestProperties"
-prefix: "com.somecompany"
 
 prop {
-    name: "test_double"
+    api_name: "test_double"
     type: Double
+    prop_name: "vendor.test_double"
     scope: Internal
+    access: ReadWrite
 }
 prop {
-    name: "test_int"
+    api_name: "test_int"
     type: Integer
+    prop_name: "vendor.test_int"
     scope: Public
+    access: ReadWrite
 }
 prop {
-    name: "test.string"
+    api_name: "test.string"
     type: String
+    prop_name: "vendor.test.string"
     scope: System
-    readonly: true
+    access: ReadWrite
 }
 
 prop {
-    name: "test.enum"
+    api_name: "test.enum"
     type: Enum
+    prop_name: "vendor.test.enum"
     enum_values: "a|b|c|D|e|f|G"
     scope: Internal
-    readonly: false
+    access: ReadWrite
 }
 prop {
-    name: "test_BOOLeaN"
+    api_name: "test_BOOLeaN"
     type: Boolean
+    prop_name: "ro.vendor.test.b"
     scope: Public
+    access: Writeonce
 }
 prop {
-    name: "longlonglongLONGLONGlongLONGlongLONG"
+    api_name: "vendor.os_test-long"
     type: Long
     scope: System
+    access: ReadWrite
 }
 
 prop {
-    name: "test_double_list"
+    api_name: "test_double_list"
     type: DoubleList
     scope: Internal
+    access: ReadWrite
 }
 prop {
-    name: "test_list_int"
+    api_name: "test_list_int"
     type: IntegerList
     scope: Public
+    access: ReadWrite
 }
 prop {
-    name: "test.strlist"
+    api_name: "test.strlist"
     type: StringList
     scope: System
-    readonly: false
+    access: ReadWrite
 }
 
 prop {
-    name: "el"
+    api_name: "el"
     type: EnumList
     enum_values: "enu|mva|lue"
     scope: Internal
+    access: ReadWrite
 }
 )";
 
@@ -145,7 +156,7 @@ public final class TestProperties {
     }
 
     private static String tryParseString(String str) {
-        return str;
+        return str.length() == 0 ? null : str;
     }
 
     private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
@@ -196,19 +207,34 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<Double> test_double() {
-        String value = SystemProperties.get("ro.com.somecompany.test_double");
+        String value = SystemProperties.get("vendor.test_double");
         return Optional.ofNullable(tryParseDouble(value));
     }
 
+    /** @hide */
+    public static void test_double(Double value) {
+        SystemProperties.set("vendor.test_double", value.toString());
+    }
+
     public static Optional<Integer> test_int() {
-        String value = SystemProperties.get("ro.com.somecompany.test_int");
+        String value = SystemProperties.get("vendor.test_int");
         return Optional.ofNullable(tryParseInteger(value));
+    }
+
+    /** @hide */
+    public static void test_int(Integer value) {
+        SystemProperties.set("vendor.test_int", value.toString());
     }
 
     @SystemApi
     public static Optional<String> test_string() {
-        String value = SystemProperties.get("ro.com.somecompany.test.string");
+        String value = SystemProperties.get("vendor.test.string");
         return Optional.ofNullable(tryParseString(value));
+    }
+
+    /** @hide */
+    public static void test_string(String value) {
+        SystemProperties.set("vendor.test.string", value.toString());
     }
 
     /** @hide */
@@ -224,49 +250,67 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<test_enum_values> test_enum() {
-        String value = SystemProperties.get("com.somecompany.test.enum");
+        String value = SystemProperties.get("vendor.test.enum");
         return Optional.ofNullable(tryParseEnum(test_enum_values.class, value));
     }
 
     /** @hide */
     public static void test_enum(test_enum_values value) {
-        SystemProperties.set("com.somecompany.test.enum", value.toString());
+        SystemProperties.set("vendor.test.enum", value.toString());
     }
 
-
     public static Optional<Boolean> test_BOOLeaN() {
-        String value = SystemProperties.get("ro.com.somecompany.test_BOOLeaN");
+        String value = SystemProperties.get("ro.vendor.test.b");
         return Optional.ofNullable(tryParseBoolean(value));
     }
 
+    /** @hide */
+    public static void test_BOOLeaN(Boolean value) {
+        SystemProperties.set("ro.vendor.test.b", value.toString());
+    }
+
     @SystemApi
-    public static Optional<Long> longlonglongLONGLONGlongLONGlongLONG() {
-        String value = SystemProperties.get("ro.com.somecompany.longlonglongLONGLONGlongLONGlongLONG");
+    public static Optional<Long> vendor_os_test_long() {
+        String value = SystemProperties.get("vendor.vendor.os_test-long");
         return Optional.ofNullable(tryParseLong(value));
     }
 
     /** @hide */
+    public static void vendor_os_test_long(Long value) {
+        SystemProperties.set("vendor.vendor.os_test-long", value.toString());
+    }
+
+    /** @hide */
     public static Optional<List<Double>> test_double_list() {
-        String value = SystemProperties.get("ro.com.somecompany.test_double_list");
+        String value = SystemProperties.get("vendor.test_double_list");
         return Optional.ofNullable(tryParseList(v -> tryParseDouble(v), value));
     }
 
+    /** @hide */
+    public static void test_double_list(List<Double> value) {
+        SystemProperties.set("vendor.test_double_list", formatList(value));
+    }
+
     public static Optional<List<Integer>> test_list_int() {
-        String value = SystemProperties.get("ro.com.somecompany.test_list_int");
+        String value = SystemProperties.get("vendor.test_list_int");
         return Optional.ofNullable(tryParseList(v -> tryParseInteger(v), value));
+    }
+
+    /** @hide */
+    public static void test_list_int(List<Integer> value) {
+        SystemProperties.set("vendor.test_list_int", formatList(value));
     }
 
     @SystemApi
     public static Optional<List<String>> test_strlist() {
-        String value = SystemProperties.get("com.somecompany.test.strlist");
+        String value = SystemProperties.get("vendor.test.strlist");
         return Optional.ofNullable(tryParseList(v -> tryParseString(v), value));
     }
 
-    @SystemApi
+    /** @hide */
     public static void test_strlist(List<String> value) {
-        SystemProperties.set("com.somecompany.test.strlist", formatList(value));
+        SystemProperties.set("vendor.test.strlist", formatList(value));
     }
-
 
     /** @hide */
     public static enum el_values {
@@ -277,8 +321,13 @@ public final class TestProperties {
 
     /** @hide */
     public static Optional<List<el_values>> el() {
-        String value = SystemProperties.get("ro.com.somecompany.el");
+        String value = SystemProperties.get("vendor.el");
         return Optional.ofNullable(tryParseEnumList(el_values.class, value));
+    }
+
+    /** @hide */
+    public static void el(List<el_values> value) {
+        SystemProperties.set("vendor.el", formatList(value));
     }
 }
 )";
@@ -304,12 +353,11 @@ TEST(SyspropTest, JavaGenTest) {
 
   std::string java_output_path =
       temp_dir.path + "/com/somecompany/TestProperties.java"s;
-  std::string jni_output_path = temp_dir.path + "/TestProperties_jni.cpp"s;
 
   std::string java_output;
   ASSERT_TRUE(
       android::base::ReadFileToString(java_output_path, &java_output, true));
-  ASSERT_EQ(java_output, kExpectedJavaOutput);
+  EXPECT_EQ(java_output, kExpectedJavaOutput);
 
   unlink(java_output_path.c_str());
   rmdir((temp_dir.path + "/com/somecompany"s).c_str());
