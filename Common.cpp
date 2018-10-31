@@ -160,24 +160,6 @@ bool ValidateProps(const sysprop::Properties& props, std::string* err) {
     }
   }
 
-  if (props.owner() == sysprop::Platform) {
-    if (props.module() != "android.os.PlatformProperties") {
-      if (err)
-        *err =
-            "Platform-defined properties should have "
-            "\"android.os.PlatformProperties\" as module name";
-      return false;
-    }
-  } else {
-    if (props.module() == "android.os.PlatformProperties") {
-      if (err)
-        *err =
-            "Vendor or Odm cannot use \"android.os.PlatformProperties\" as "
-            "module name";
-      return false;
-    }
-  }
-
   return true;
 }
 

@@ -111,30 +111,6 @@ prop {
 }
 )";
 
-constexpr const char* kInvalidModuleNameForPlatform =
-    R"(
-owner: Platform
-module: "android.os.notPlatformProperties"
-prefix: "android.os"
-prop {
-    name: "stringprop"
-    type: String
-    scope: Internal
-}
-)";
-
-constexpr const char* kInvalidModuleNameForVendorOrOdm =
-    R"(
-owner: Vendor
-module: "android.os.PlatformProperties"
-prefix: "android.os"
-prop {
-    name: "init"
-    type: Integer
-    scope: System
-}
-)";
-
 constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kDuplicatedField, "Duplicated prop name \"dup\""},
     {kEmptyProp, "There is no defined property"},
@@ -145,12 +121,6 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kInvalidNamespaceForPlatform,
      "Prop \"utclong\" owned by platform cannot have vendor. or odm. "
      "namespace"},
-    {kInvalidModuleNameForPlatform,
-     "Platform-defined properties should have "
-     "\"android.os.PlatformProperties\" as module name"},
-    {kInvalidModuleNameForVendorOrOdm,
-     "Vendor or Odm cannot use \"android.os.PlatformProperties\" as module "
-     "name"},
 };
 
 }  // namespace
