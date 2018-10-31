@@ -18,16 +18,22 @@ syntax = "proto2";
 
 package sysprop;
 
-enum Scope {
-  Public = 0;
-  System = 1;
-  Internal = 2;
+enum Access {
+  Readonly = 0;
+  Writeonce = 1;
+  ReadWrite = 2;
 }
 
 enum Owner {
   Platform = 0;
   Vendor = 1;
   Odm = 2;
+}
+
+enum Scope {
+  Public = 0;
+  System = 1;
+  Internal = 2;
 }
 
 enum Type {
@@ -41,22 +47,22 @@ enum Type {
   BooleanList = 20;
   IntegerList = 21;
   LongList = 22;
-  DoubleList = 24;
-  StringList = 25;
-  EnumList = 26;
+  DoubleList = 23;
+  StringList = 24;
+  EnumList = 25;
 }
 
 message Property {
-  required string name = 1;
+  required string api_name = 1;
   required Type type = 2;
-  required Scope scope = 3;
-  optional bool readonly = 4;
-  optional string enum_values = 50;
+  required Access access = 3;
+  required Scope scope = 4;
+  optional string prop_name = 5;
+  optional string enum_values = 6;
 }
 
 message Properties {
   required Owner owner = 1;
   required string module = 2;
-  optional string prefix = 3;
-  repeated Property prop = 4;
+  repeated Property prop = 3;
 }
