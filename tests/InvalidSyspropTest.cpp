@@ -30,16 +30,17 @@ constexpr const char* kDuplicatedField =
     R"(
 owner: Vendor
 module: "com.error.DuplicatedField"
-prefix: "com.error"
 prop {
-    name: "dup"
+    api_name: "dup"
     type: Integer
     scope: Internal
+    access: Readonly
 }
 prop {
-    name: "dup"
+    api_name: "dup"
     type: Long
     scope: Public
+    access: ReadWrite
 }
 )";
 
@@ -47,18 +48,17 @@ constexpr const char* kEmptyProp =
     R"(
 owner: Vendor
 module: "com.google.EmptyProp"
-prefix: ""
 )";
 
-constexpr const char* kInvalidPropName =
+constexpr const char* kInvalidApiName =
     R"(
 owner: Odm
 module: "odm.invalid.prop.name"
-prefix: "invalid"
 prop {
-    name: "!@#$"
+    api_name: "!@#$"
     type: Integer
     scope: System
+    access: ReadWrite
 }
 )";
 
@@ -66,11 +66,11 @@ constexpr const char* kEmptyEnumValues =
     R"(
 owner: Odm
 module: "test.manufacturer"
-prefix: "test"
 prop {
-    name: "empty_enum_value"
+    api_name: "empty_enum_value"
     type: Enum
     scope: Internal
+    access: ReadWrite
 }
 )";
 
@@ -78,12 +78,12 @@ constexpr const char* kDuplicatedEnumValue =
     R"(
 owner: Vendor
 module: "vendor.module.name"
-prefix: ""
 prop {
-    name: "status"
+    api_name: "status"
     type: Enum
     enum_values: "on|off|intermediate|on"
     scope: Public
+    access: ReadWrite
 }
 )";
 
@@ -91,66 +91,69 @@ constexpr const char* kInvalidModuleName =
     R"(
 owner: Platform
 module: ""
-prefix: ""
 prop {
-    name: "integer"
+    api_name: "integer"
     type: Integer
     scope: Public
+    access: ReadWrite
 }
 )";
 
 constexpr const char* kInvalidNamespaceForPlatform =
     R"(
 owner: Platform
-module: "android.os.PlatformProperties"
-prefix: "vendor.buildprop"
+module: "android.PlatformProperties"
 prop {
-    name: "utclong"
+    api_name: "vendor.build.utc_long"
     type: Long
     scope: System
+    access: ReadWrite
 }
 )";
 
-constexpr const char* kInvalidModuleNameForPlatform =
-    R"(
-owner: Platform
-module: "android.os.notPlatformProperties"
-prefix: "android.os"
-prop {
-    name: "stringprop"
-    type: String
-    scope: Internal
-}
-)";
-
-constexpr const char* kInvalidModuleNameForVendorOrOdm =
+constexpr const char* kRoPrefixForReadWriteProperty =
     R"(
 owner: Vendor
-module: "android.os.PlatformProperties"
-prefix: "android.os"
+module: "com.android.VendorProp"
 prop {
-    name: "init"
-    type: Integer
+    api_name: "i_am_readwrite"
+    type: Long
     scope: System
+    prop_name: "ro.vendor.i_am_readwrite"
+    access: ReadWrite
+}
+)";
+
+constexpr const char* kNoRoPrefixForReadonlyProperty =
+    R"(
+owner: Odm
+module: "com.android.OdmProp"
+prop {
+    api_name: "i.am.readonly"
+    type: Long
+    scope: System
+    prop_name: "odm.i_am_readwrite"
+    access: Readonly
 }
 )";
 
 constexpr const char* kTestCasesAndExpectedErrors[][2] = {
-    {kDuplicatedField, "Duplicated prop name \"dup\""},
+    {kDuplicatedField, "Duplicated API name \"dup\""},
     {kEmptyProp, "There is no defined property"},
-    {kInvalidPropName, "Invalid prop name \"!@#$\""},
-    {kEmptyEnumValues, "Invalid enum value \"\" for prop \"empty_enum_value\""},
-    {kDuplicatedEnumValue, "Duplicated enum value \"on\" for prop \"status\""},
+    {kInvalidApiName, "Invalid API name \"!@#$\""},
+    {kEmptyEnumValues, "Invalid enum value \"\" for API \"empty_enum_value\""},
+    {kDuplicatedEnumValue, "Duplicated enum value \"on\" for API \"status\""},
     {kInvalidModuleName, "Invalid module name \"\""},
     {kInvalidNamespaceForPlatform,
-     "Prop \"utclong\" owned by platform cannot have vendor. or odm. "
+     "Prop \"vendor.build.utc_long\" owned by platform cannot have vendor. or "
+     "odm. "
      "namespace"},
-    {kInvalidModuleNameForPlatform,
-     "Platform-defined properties should have "
-     "\"android.os.PlatformProperties\" as module name"},
-    {kInvalidModuleNameForVendorOrOdm,
-     "Vendor or Odm cannot use \"android.os.PlatformProperties\" as module "
-     "name"},
+    {kRoPrefixForReadWriteProperty,
+     "Prop \"ro.vendor.i_am_readwrite\" is ReadWrite and also have prefix "
+     "\"ro.\""},
+    {kNoRoPrefixForReadonlyProperty,
+     "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
+     "\"ro.\""},
 };
 
 }  // namespace

@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cmath>
@@ -40,40 +41,58 @@
 
 namespace {
 
+std::string GenerateDefaultPropName(const sysprop::Properties& props,
+                                    const sysprop::Property& prop);
 bool IsCorrectIdentifier(const std::string& name);
-bool IsCorrectPropertyName(const std::string& name);
 bool ValidateProp(const sysprop::Properties& props,
                   const sysprop::Property& prop, std::string* err);
 bool ValidateProps(const sysprop::Properties& props, std::string* err);
+
+std::string GenerateDefaultPropName(const sysprop::Properties& props,
+                                    const sysprop::Property& prop) {
+  std::string ret;
+
+  if (prop.access() != sysprop::ReadWrite) ret = "ro.";
+
+  switch (props.owner()) {
+    case sysprop::Vendor:
+      ret += "vendor.";
+      break;
+    case sysprop::Odm:
+      ret += "odm.";
+      break;
+    default:
+      break;
+  }
+
+  ret += prop.api_name();
+
+  return ret;
+}
 
 bool IsCorrectIdentifier(const std::string& name) {
   if (name.empty()) return false;
   if (std::isalpha(name[0]) == 0 && name[0] != '_') return false;
 
-  for (size_t i = 1; i < name.size(); ++i) {
-    if (std::isalpha(name[i]) || name[i] == '_') continue;
-    if (std::isdigit(name[i])) continue;
-
-    return false;
-  }
-
-  return true;
+  return std::all_of(name.begin() + 1, name.end(), [](char ch) {
+    return std::isalnum(ch) != 0 || ch == '_';
+  });
 }
 
-bool IsCorrectPropertyName(const std::string& name) {
+bool IsCorrectPropertyOrApiName(const std::string& name) {
   if (name.empty()) return false;
 
-  for (const std::string& token : android::base::Split(name, ".")) {
-    if (!IsCorrectIdentifier(token)) return false;
-  }
+  static std::unordered_set<char> allowed{'_', '-', '.'};
 
-  return true;
+  return std::all_of(name.begin(), name.end(), [](char ch) {
+    return std::isalnum(ch) != 0 || allowed.count(ch) != 0;
+  });
 }
 
 bool ValidateProp(const sysprop::Properties& props,
                   const sysprop::Property& prop, std::string* err) {
-  if (!IsCorrectPropertyName(prop.name())) {
-    if (err) *err = "Invalid prop name \"" + prop.name() + "\"";
+  if (!IsCorrectPropertyOrApiName(prop.api_name())) {
+    if (err) *err = "Invalid API name \"" + prop.api_name() + "\"";
     return false;
   }
 
@@ -81,15 +100,16 @@ bool ValidateProp(const sysprop::Properties& props,
     std::vector<std::string> names =
         android::base::Split(prop.enum_values(), "|");
     if (names.empty()) {
-      if (err) *err = "Enum values are empty for prop \"" + prop.name() + "\"";
+      if (err)
+        *err = "Enum values are empty for API \"" + prop.api_name() + "\"";
       return false;
     }
 
     for (const std::string& name : names) {
       if (!IsCorrectIdentifier(name)) {
         if (err)
-          *err = "Invalid enum value \"" + name + "\" for prop \"" +
-                 prop.name() + "\"";
+          *err = "Invalid enum value \"" + name + "\" for API \"" +
+                 prop.api_name() + "\"";
         return false;
       }
     }
@@ -98,22 +118,71 @@ bool ValidateProp(const sysprop::Properties& props,
     for (const std::string& name : names) {
       if (!name_set.insert(name).second) {
         if (err)
-          *err = "Duplicated enum value \"" + name + "\" for prop \"" +
-                 prop.name() + "\"";
+          *err = "Duplicated enum value \"" + name + "\" for API \"" +
+                 prop.api_name() + "\"";
         return false;
       }
     }
   }
 
-  if (props.owner() == sysprop::Platform) {
-    std::string full_name = props.prefix() + prop.name();
-    if (android::base::StartsWith(full_name, "vendor.") ||
-        android::base::StartsWith(full_name, "odm.")) {
-      if (err)
-        *err = "Prop \"" + prop.name() +
-               "\" owned by platform cannot have vendor. or odm. namespace";
-      return false;
-    }
+  std::string prop_name = prop.prop_name();
+  if (prop_name.empty()) prop_name = GenerateDefaultPropName(props, prop);
+
+  if (!IsCorrectPropertyOrApiName(prop_name)) {
+    if (err) *err = "Invalid prop name \"" + prop.prop_name() + "\"";
+    return false;
+  }
+
+  static const std::regex vendor_regex("([^.]+\\.)?vendor\\..+");
+  static const std::regex odm_regex("([^.]+\\.)?odm\\..+");
+
+  switch (props.owner()) {
+    case sysprop::Platform:
+      if (std::regex_match(prop_name, vendor_regex) ||
+          std::regex_match(prop_name, odm_regex)) {
+        if (err)
+          *err = "Prop \"" + prop_name +
+                 "\" owned by platform cannot have vendor. or odm. namespace";
+        return false;
+      }
+      break;
+    case sysprop::Vendor:
+      if (!std::regex_match(prop_name, vendor_regex)) {
+        if (err)
+          *err = "Prop \"" + prop_name +
+                 "\" owned by vendor should have vendor. namespace";
+        return false;
+      }
+      break;
+    case sysprop::Odm:
+      if (!std::regex_match(prop_name, odm_regex)) {
+        if (err)
+          *err = "Prop \"" + prop_name +
+                 "\" owned by odm should have odm. namespace";
+        return false;
+      }
+      break;
+  }
+
+  switch (prop.access()) {
+    case sysprop::ReadWrite:
+      if (android::base::StartsWith(prop_name, "ro.")) {
+        if (err) {
+          *err = "Prop \"" + prop_name +
+                 "\" is ReadWrite and also have prefix \"ro.\"";
+        }
+        return false;
+      }
+      break;
+    default:
+      if (!android::base::StartsWith(prop_name, "ro.")) {
+        if (err) {
+          *err = "Prop \"" + prop_name +
+                 "\" isn't ReadWrite, but don't have prefix \"ro.\"";
+        }
+        return false;
+      }
+      break;
   }
 
   return true;
@@ -133,11 +202,6 @@ bool ValidateProps(const sysprop::Properties& props, std::string* err) {
     }
   }
 
-  if (!props.prefix().empty() && !IsCorrectPropertyName(props.prefix())) {
-    if (err) *err = "Invalid prefix \"" + props.prefix() + "\"";
-    return false;
-  }
-
   if (props.prop_size() == 0) {
     if (err) *err = "There is no defined property";
     return false;
@@ -152,28 +216,10 @@ bool ValidateProps(const sysprop::Properties& props, std::string* err) {
 
   for (int i = 0; i < props.prop_size(); ++i) {
     const auto& prop = props.prop(i);
-    auto res = prop_names.insert(PropNameToIdentifier(prop.name()));
+    auto res = prop_names.insert(ApiNameToIdentifier(prop.api_name()));
 
     if (!res.second) {
-      if (err) *err = "Duplicated prop name \"" + prop.name() + "\"";
-      return false;
-    }
-  }
-
-  if (props.owner() == sysprop::Platform) {
-    if (props.module() != "android.os.PlatformProperties") {
-      if (err)
-        *err =
-            "Platform-defined properties should have "
-            "\"android.os.PlatformProperties\" as module name";
-      return false;
-    }
-  } else {
-    if (props.module() == "android.os.PlatformProperties") {
-      if (err)
-        *err =
-            "Vendor or Odm cannot use \"android.os.PlatformProperties\" as "
-            "module name";
+      if (err) *err = "Duplicated API name \"" + prop.api_name() + "\"";
       return false;
     }
   }
@@ -236,13 +282,15 @@ bool ParseProps(const std::string& input_file_path, sysprop::Properties* props,
   for (int i = 0; i < props->prop_size(); ++i) {
     // set each optional field to its default value
     sysprop::Property& prop = *props->mutable_prop(i);
-    if (!prop.has_readonly()) prop.set_readonly(true);
+    if (prop.prop_name().empty())
+      prop.set_prop_name(GenerateDefaultPropName(*props, prop));
   }
 
   return true;
 }
 
-std::string PropNameToIdentifier(const std::string& name) {
-  static const std::regex kRegexDot{"\\."};
-  return std::regex_replace(name, kRegexDot, "_");
+std::string ApiNameToIdentifier(const std::string& name) {
+  static const std::regex kRegexAllowed{"-|\\."};
+  return (isdigit(name[0]) ? "_" : "") +
+         std::regex_replace(name, kRegexAllowed, "_");
 }

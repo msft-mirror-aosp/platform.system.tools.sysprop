@@ -107,7 +107,7 @@ template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
 }
 
 template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str) {
-    return std::make_optional(str);
+    return *str == '\0' ? std::nullopt : std::make_optional(str);
 }
 
 template <typename Vec> [[maybe_unused]] std::optional<Vec> DoParseList(const char* str) {
@@ -197,7 +197,7 @@ std::string GetHeaderIncludeGuardName(const sysprop::Properties& props) {
 }
 
 std::string GetCppEnumName(const sysprop::Property& prop) {
-  return PropNameToIdentifier(prop.name()) + "_values";
+  return ApiNameToIdentifier(prop.api_name()) + "_values";
 }
 
 std::string GetCppPropTypeName(const sysprop::Property& prop) {
@@ -253,7 +253,7 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
     if (i > 0) writer.Write("\n");
 
     const sysprop::Property& prop = props.prop(i);
-    std::string prop_id = PropNameToIdentifier(prop.name());
+    std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string prop_type = GetCppPropTypeName(prop);
 
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
@@ -269,7 +269,7 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
 
     writer.Write("std::optional<%s> %s();\n", prop_type.c_str(),
                  prop_id.c_str());
-    if (!prop.readonly()) {
+    if (prop.access() != sysprop::Readonly) {
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
     }
@@ -304,7 +304,7 @@ bool GenerateSource(const sysprop::Properties& props,
       continue;
     }
 
-    std::string prop_id = PropNameToIdentifier(prop.name());
+    std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string enum_name = GetCppEnumName(prop);
 
     writer.Write("constexpr const std::pair<const char*, %s> %s_list[] = {\n",
@@ -335,7 +335,7 @@ bool GenerateSource(const sysprop::Properties& props,
     writer.Dedent();
     writer.Write("}\n\n");
 
-    if (!prop.readonly()) {
+    if (prop.access() != sysprop::Readonly) {
       writer.Write("std::string FormatValue(%s value) {\n", enum_name.c_str());
       writer.Indent();
       writer.Write("for (auto [name, val] : %s_list) {\n", prop_id.c_str());
@@ -348,14 +348,11 @@ bool GenerateSource(const sysprop::Properties& props,
       writer.Dedent();
       writer.Write("}\n");
 
-      std::string prefix = (prop.readonly() ? "ro." : "") + props.prefix();
-      if (!prefix.empty() && prefix.back() != '.') prefix.push_back('.');
-
       writer.Write(
           "LOG(FATAL) << \"Invalid value \" << "
           "static_cast<std::int32_t>(value) << "
-          "\" for property \" << \"%s%s\";\n",
-          prefix.c_str(), prop_id.c_str());
+          "\" for property \" << \"%s\";\n",
+          prop.prop_name().c_str());
 
       writer.Write("__builtin_unreachable();\n");
       writer.Dedent();
@@ -371,10 +368,8 @@ bool GenerateSource(const sysprop::Properties& props,
     if (i > 0) writer.Write("\n");
 
     const sysprop::Property& prop = props.prop(i);
-    std::string prop_id = PropNameToIdentifier(prop.name());
+    std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string prop_type = GetCppPropTypeName(prop);
-    std::string prefix = (prop.readonly() ? "ro." : "") + props.prefix();
-    if (!prefix.empty() && prefix.back() != '.') prefix.push_back('.');
 
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
       std::string enum_name = GetCppEnumName(prop);
@@ -383,19 +378,19 @@ bool GenerateSource(const sysprop::Properties& props,
     writer.Write("std::optional<%s> %s() {\n", prop_type.c_str(),
                  prop_id.c_str());
     writer.Indent();
-    writer.Write("return GetProp<%s>(\"%s%s\");\n", prop_type.c_str(),
-                 prefix.c_str(), prop.name().c_str());
+    writer.Write("return GetProp<%s>(\"%s\");\n", prop_type.c_str(),
+                 prop.prop_name().c_str());
     writer.Dedent();
     writer.Write("}\n");
 
-    if (!prop.readonly()) {
+    if (prop.access() != sysprop::Readonly) {
       writer.Write("\nbool %s(const %s& value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
       writer.Write(
-          "return __system_property_set(\"%s%s\", "
+          "return __system_property_set(\"%s\", "
           "%s.c_str()) == 0;\n",
-          prefix.c_str(), prop.name().c_str(),
+          prop.prop_name().c_str(),
           prop.type() == sysprop::String ? "value" : "FormatValue(value)");
       writer.Dedent();
       writer.Write("}\n");
