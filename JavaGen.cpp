@@ -322,7 +322,7 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("public static void %s(%s value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
-      writer.Write("SystemProperties.set(\"%s\", %s);\n",
+      writer.Write("SystemProperties.set(\"%s\", value == null ? \"\" : %s);\n",
                    prop.prop_name().c_str(),
                    IsListProp(prop) ? "formatList(value)" : "value.toString()");
       writer.Dedent();
