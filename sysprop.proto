@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package sysprop;
 
@@ -53,16 +53,16 @@ enum Type {
 }
 
 message Property {
-  required string api_name = 1;
-  required Type type = 2;
-  required Access access = 3;
-  required Scope scope = 4;
-  optional string prop_name = 5;
-  optional string enum_values = 6;
+  string api_name = 1;
+  Type type = 2;
+  Access access = 3;
+  Scope scope = 4;
+  string prop_name = 5;
+  string enum_values = 6;
 }
 
 message Properties {
-  required Owner owner = 1;
-  required string module = 2;
+  Owner owner = 1;
+  string module = 2;
   repeated Property prop = 3;
 }
