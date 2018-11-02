@@ -162,6 +162,8 @@ bool ValidateProp(const sysprop::Properties& props,
         return false;
       }
       break;
+    default:
+      break;
   }
 
   switch (prop.access()) {
