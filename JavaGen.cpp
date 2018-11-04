@@ -271,6 +271,15 @@ void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
 bool GenerateJavaClass(const sysprop::Properties& props,
                        std::string* java_result,
                        [[maybe_unused]] std::string* err) {
+  sysprop::Scope classScope = sysprop::Internal;
+
+  for (int i = 0; i < props.prop_size(); ++i) {
+    // Get least restrictive scope among props. For example, if all props
+    // are internal, class can be as well internal. However, class should
+    // be public or system if at least one prop is so.
+    classScope = std::min(classScope, props.prop(i).scope());
+  }
+
   std::string package_name = GetJavaPackageName(props);
   std::string class_name = GetJavaClassName(props);
 
@@ -278,6 +287,7 @@ bool GenerateJavaClass(const sysprop::Properties& props,
   writer.Write("%s", kGeneratedFileFooterComments);
   writer.Write("package %s;\n\n", package_name.c_str());
   writer.Write("%s", kJavaFileImports);
+  WriteJavaAnnotation(writer, classScope);
   writer.Write("public final class %s {\n", class_name.c_str());
   writer.Indent();
   writer.Write("private %s () {}\n\n", class_name.c_str());
@@ -292,7 +302,9 @@ bool GenerateJavaClass(const sysprop::Properties& props,
     std::string prop_type = GetJavaTypeName(prop);
 
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
-      WriteJavaAnnotation(writer, prop.scope());
+      if (prop.scope() != classScope) {
+        WriteJavaAnnotation(writer, prop.scope());
+      }
       writer.Write("public static enum %s {\n",
                    GetJavaEnumTypeName(prop).c_str());
       writer.Indent();
@@ -304,7 +316,9 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("}\n\n");
     }
 
-    WriteJavaAnnotation(writer, prop.scope());
+    if (prop.scope() != classScope) {
+      WriteJavaAnnotation(writer, prop.scope());
+    }
 
     writer.Write("public static Optional<%s> %s() {\n", prop_type.c_str(),
                  prop_id.c_str());
@@ -318,11 +332,13 @@ bool GenerateJavaClass(const sysprop::Properties& props,
 
     if (prop.access() != sysprop::Readonly) {
       writer.Write("\n");
-      WriteJavaAnnotation(writer, sysprop::Internal);
+      if (classScope != sysprop::Internal) {
+        WriteJavaAnnotation(writer, sysprop::Internal);
+      }
       writer.Write("public static void %s(%s value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
-      writer.Write("SystemProperties.set(\"%s\", %s);\n",
+      writer.Write("SystemProperties.set(\"%s\", value == null ? \"\" : %s);\n",
                    prop.prop_name().c_str(),
                    IsListProp(prop) ? "formatList(value)" : "value.toString()");
       writer.Dedent();

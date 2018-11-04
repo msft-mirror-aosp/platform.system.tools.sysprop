@@ -213,7 +213,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_double(Double value) {
-        SystemProperties.set("vendor.test_double", value.toString());
+        SystemProperties.set("vendor.test_double", value == null ? "" : value.toString());
     }
 
     public static Optional<Integer> test_int() {
@@ -223,7 +223,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_int(Integer value) {
-        SystemProperties.set("vendor.test_int", value.toString());
+        SystemProperties.set("vendor.test_int", value == null ? "" : value.toString());
     }
 
     @SystemApi
@@ -234,7 +234,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_string(String value) {
-        SystemProperties.set("vendor.test.string", value.toString());
+        SystemProperties.set("vendor.test.string", value == null ? "" : value.toString());
     }
 
     /** @hide */
@@ -256,7 +256,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_enum(test_enum_values value) {
-        SystemProperties.set("vendor.test.enum", value.toString());
+        SystemProperties.set("vendor.test.enum", value == null ? "" : value.toString());
     }
 
     public static Optional<Boolean> test_BOOLeaN() {
@@ -266,7 +266,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_BOOLeaN(Boolean value) {
-        SystemProperties.set("ro.vendor.test.b", value.toString());
+        SystemProperties.set("ro.vendor.test.b", value == null ? "" : value.toString());
     }
 
     @SystemApi
@@ -277,7 +277,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void vendor_os_test_long(Long value) {
-        SystemProperties.set("vendor.vendor.os_test-long", value.toString());
+        SystemProperties.set("vendor.vendor.os_test-long", value == null ? "" : value.toString());
     }
 
     /** @hide */
@@ -288,7 +288,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_double_list(List<Double> value) {
-        SystemProperties.set("vendor.test_double_list", formatList(value));
+        SystemProperties.set("vendor.test_double_list", value == null ? "" : formatList(value));
     }
 
     public static Optional<List<Integer>> test_list_int() {
@@ -298,7 +298,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_list_int(List<Integer> value) {
-        SystemProperties.set("vendor.test_list_int", formatList(value));
+        SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
     @SystemApi
@@ -309,7 +309,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_strlist(List<String> value) {
-        SystemProperties.set("vendor.test.strlist", formatList(value));
+        SystemProperties.set("vendor.test.strlist", value == null ? "" : formatList(value));
     }
 
     /** @hide */
@@ -327,7 +327,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void el(List<el_values> value) {
-        SystemProperties.set("vendor.el", formatList(value));
+        SystemProperties.set("vendor.el", value == null ? "" : formatList(value));
     }
 }
 )";
