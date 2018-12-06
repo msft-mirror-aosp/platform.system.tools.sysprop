@@ -177,6 +177,11 @@ bool ValidateProp(const sysprop::Properties& props,
       }
       break;
     default:
+      /*
+       * TODO: Some properties don't have prefix "ro." but not written in any
+       * Java or C++ codes. They might be misnamed and should be readonly. Will
+       * uncomment this check after fixing them all / or making a whitelist for
+       * them
       if (!android::base::StartsWith(prop_name, "ro.")) {
         if (err) {
           *err = "Prop \"" + prop_name +
@@ -184,6 +189,7 @@ bool ValidateProp(const sysprop::Properties& props,
         }
         return false;
       }
+      */
       break;
   }
 
