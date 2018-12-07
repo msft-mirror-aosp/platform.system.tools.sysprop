@@ -97,28 +97,24 @@ private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str)
 }
 
 private static <T> List<T> tryParseList(Function<String, T> elementParser, String str) {
+    if (str == null || str.equals("")) return null;
+
     List<T> ret = new ArrayList<>();
 
     for (String element : str.split(",")) {
-        T parsed = elementParser.apply(element);
-        if (parsed == null) {
-            return null;
-        }
-        ret.add(parsed);
+        ret.add(elementParser.apply(element));
     }
 
     return ret;
 }
 
 private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
+    if (str == null || str.equals("")) return null;
+
     List<T> ret = new ArrayList<>();
 
     for (String element : str.split(",")) {
-        T parsed = tryParseEnum(enumType, element);
-        if (parsed == null) {
-            return null;
-        }
-        ret.add(parsed);
+        ret.add(tryParseEnum(enumType, element));
     }
 
     return ret;
@@ -128,7 +124,7 @@ private static <T> String formatList(List<T> list) {
     StringJoiner joiner = new StringJoiner(",");
 
     for (T element : list) {
-        joiner.add(element.toString());
+        joiner.add(element == null ? "" : element.toString());
     }
 
     return joiner.toString();
@@ -140,6 +136,7 @@ const std::regex kRegexUnderscore{"_"};
 
 std::string GetJavaTypeName(const sysprop::Property& prop);
 std::string GetJavaEnumTypeName(const sysprop::Property& prop);
+std::string GetJavaListElementTypeName(const sysprop::Property& prop);
 std::string GetJavaPackageName(const sysprop::Properties& props);
 std::string GetJavaClassName(const sysprop::Properties& props);
 bool IsListProp(const sysprop::Property& prop);
@@ -179,6 +176,25 @@ std::string GetJavaTypeName(const sysprop::Property& prop) {
       return "List<" + GetJavaEnumTypeName(prop) + ">";
     default:
       __builtin_unreachable();
+  }
+}
+
+std::string GetJavaListElementTypeName(const sysprop::Property& prop) {
+  switch (prop.type()) {
+    case sysprop::BooleanList:
+      return "Boolean";
+    case sysprop::IntegerList:
+      return "Integer";
+    case sysprop::LongList:
+      return "Long";
+    case sysprop::DoubleList:
+      return "Double";
+    case sysprop::StringList:
+      return "String";
+    case sysprop::EnumList:
+      return GetJavaEnumTypeName(prop);
+    default:
+      return "";
   }
 }
 
@@ -341,6 +357,25 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("SystemProperties.set(\"%s\", value == null ? \"\" : %s);\n",
                    prop.prop_name().c_str(),
                    IsListProp(prop) ? "formatList(value)" : "value.toString()");
+      writer.Dedent();
+      writer.Write("}\n");
+    }
+
+    if (IsListProp(prop)) {
+      writer.Write("\n");
+      if (prop.scope() != classScope) {
+        WriteJavaAnnotation(writer, prop.scope());
+      }
+
+      std::string element_type = GetJavaListElementTypeName(prop);
+
+      writer.Write("public static Optional<%s> %s(int index) {\n",
+                   element_type.c_str(), prop_id.c_str());
+      writer.Indent();
+      writer.Write(
+          "return %s().filter(list -> 0 <= index && index < list.size())\n",
+          prop_id.c_str());
+      writer.Write("        .map(list -> list.get(index));\n");
       writer.Dedent();
       writer.Write("}\n");
     }
