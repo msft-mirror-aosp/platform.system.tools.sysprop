@@ -124,6 +124,11 @@ prop {
 }
 )";
 
+/*
+ * TODO: Some properties don't have prefix "ro." but not written in any
+ * Java or C++ codes. They might be misnamed and should be readonly. Will
+ * uncomment this check after fixing them all / or making a whitelist for
+ * them
 constexpr const char* kNoRoPrefixForReadonlyProperty =
     R"(
 owner: Odm
@@ -136,6 +141,7 @@ prop {
     access: Readonly
 }
 )";
+*/
 
 constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kDuplicatedField, "Duplicated API name \"dup\""},
@@ -151,9 +157,9 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kRoPrefixForReadWriteProperty,
      "Prop \"ro.vendor.i_am_readwrite\" is ReadWrite and also have prefix "
      "\"ro.\""},
-    {kNoRoPrefixForReadonlyProperty,
-     "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
-     "\"ro.\""},
+    /*    {kNoRoPrefixForReadonlyProperty,
+         "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
+         "\"ro.\""},*/
 };
 
 }  // namespace
