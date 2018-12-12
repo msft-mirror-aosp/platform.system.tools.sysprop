@@ -97,7 +97,7 @@ private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str)
 }
 
 private static <T> List<T> tryParseList(Function<String, T> elementParser, String str) {
-    if (str == null || str.equals("")) return null;
+    if (str == null || str.equals("")) return new ArrayList<>();
 
     List<T> ret = new ArrayList<>();
 
@@ -109,7 +109,7 @@ private static <T> List<T> tryParseList(Function<String, T> elementParser, Strin
 }
 
 private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
-    if (str == null || str.equals("")) return null;
+    if (str == null || str.equals("")) return new ArrayList<>();
 
     List<T> ret = new ArrayList<>();
 
