@@ -110,19 +110,15 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
     return *str == '\0' ? std::nullopt : std::make_optional(str);
 }
 
-template <typename Vec> [[maybe_unused]] std::optional<Vec> DoParseList(const char* str) {
+template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
     for (auto&& element : android::base::Split(str, ",")) {
-        auto parsed = DoParse<typename Vec::value_type>(element.c_str());
-        if (!parsed) {
-            return std::nullopt;
-        }
-        ret.emplace_back(std::move(*parsed));
+        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str());
     }
-    return std::make_optional(std::move(ret));
+    return ret;
 }
 
-template <typename T> inline std::optional<T> TryParse(const char* str) {
+template <typename T> inline T TryParse(const char* str) {
     if constexpr(is_vector<T>) {
         return DoParseList<T>(str);
     } else {
@@ -130,20 +126,22 @@ template <typename T> inline std::optional<T> TryParse(const char* str) {
     }
 }
 
-[[maybe_unused]] std::string FormatValue(std::int32_t value) {
-    return std::to_string(value);
+[[maybe_unused]] std::string FormatValue(const std::optional<std::int32_t>& value) {
+    return value ? std::to_string(*value) : "";
 }
 
-[[maybe_unused]] std::string FormatValue(std::int64_t value) {
-    return std::to_string(value);
+[[maybe_unused]] std::string FormatValue(const std::optional<std::int64_t>& value) {
+    return value ? std::to_string(*value) : "";
 }
 
-[[maybe_unused]] std::string FormatValue(double value) {
-    return android::base::StringPrintf("%.*g", std::numeric_limits<double>::max_digits10, value);
+[[maybe_unused]] std::string FormatValue(const std::optional<double>& value) {
+    return value
+        ? android::base::StringPrintf("%.*g", std::numeric_limits<double>::max_digits10, *value)
+        : "";
 }
 
-[[maybe_unused]] std::string FormatValue(bool value) {
-    return value ? "true" : "false";
+[[maybe_unused]] std::string FormatValue(const std::optional<bool>& value) {
+    return value ? (*value ? "true" : "false") : "";
 }
 
 template <typename T>
@@ -153,9 +151,9 @@ template <typename T>
     std::string ret;
 
     for (auto&& element : value) {
-        if (ret.empty()) ret.push_back(',');
-        if constexpr(std::is_same_v<T, std::string>) {
-            ret += element;
+        if (ret.empty()) ret += ',';
+        if constexpr(std::is_same_v<T, std::optional<std::string>>) {
+            if (element) ret += *element;
         } else {
             ret += FormatValue(element);
         }
@@ -165,13 +163,14 @@ template <typename T>
 }
 
 template <typename T>
-std::optional<T> GetProp(const char* key) {
+T GetProp(const char* key) {
+    T ret;
     auto pi = __system_property_find(key);
-    if (pi == nullptr) return std::nullopt;
-    std::optional<T> ret;
-    __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
-        *static_cast<std::optional<T>*>(cookie) = TryParse<T>(value);
-    }, &ret);
+    if (pi != nullptr) {
+        __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
+            *static_cast<T*>(cookie) = TryParse<T>(value);
+        }, &ret);
+    }
     return ret;
 }
 
@@ -203,29 +202,29 @@ std::string GetCppEnumName(const sysprop::Property& prop) {
 std::string GetCppPropTypeName(const sysprop::Property& prop) {
   switch (prop.type()) {
     case sysprop::Boolean:
-      return "bool";
+      return "std::optional<bool>";
     case sysprop::Integer:
-      return "std::int32_t";
+      return "std::optional<std::int32_t>";
     case sysprop::Long:
-      return "std::int64_t";
+      return "std::optional<std::int64_t>";
     case sysprop::Double:
-      return "double";
+      return "std::optional<double>";
     case sysprop::String:
-      return "std::string";
+      return "std::optional<std::string>";
     case sysprop::Enum:
-      return GetCppEnumName(prop);
+      return "std::optional<" + GetCppEnumName(prop) + ">";
     case sysprop::BooleanList:
-      return "std::vector<bool>";
+      return "std::vector<std::optional<bool>>";
     case sysprop::IntegerList:
-      return "std::vector<std::int32_t>";
+      return "std::vector<std::optional<std::int32_t>>";
     case sysprop::LongList:
-      return "std::vector<std::int64_t>";
+      return "std::vector<std::optional<std::int64_t>>";
     case sysprop::DoubleList:
-      return "std::vector<double>";
+      return "std::vector<std::optional<double>>";
     case sysprop::StringList:
-      return "std::vector<std::string>";
+      return "std::vector<std::optional<std::string>>";
     case sysprop::EnumList:
-      return "std::vector<" + GetCppEnumName(prop) + ">";
+      return "std::vector<std::optional<" + GetCppEnumName(prop) + ">>";
     default:
       __builtin_unreachable();
   }
@@ -267,8 +266,7 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
       writer.Write("};\n\n");
     }
 
-    writer.Write("std::optional<%s> %s();\n", prop_type.c_str(),
-                 prop_id.c_str());
+    writer.Write("%s %s();\n", prop_type.c_str(), prop_id.c_str());
     if (prop.access() != sysprop::Readonly) {
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
@@ -295,8 +293,7 @@ bool GenerateSource(const sysprop::Properties& props,
 
   writer.Write("namespace {\n\n");
   writer.Write("using namespace %s;\n\n", cpp_namespace.c_str());
-  writer.Write(
-      "template <typename T> std::optional<T> DoParse(const char* str);\n\n");
+  writer.Write("template <typename T> T DoParse(const char* str);\n\n");
 
   for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
@@ -336,11 +333,13 @@ bool GenerateSource(const sysprop::Properties& props,
     writer.Write("}\n\n");
 
     if (prop.access() != sysprop::Readonly) {
-      writer.Write("std::string FormatValue(%s value) {\n", enum_name.c_str());
+      writer.Write("std::string FormatValue(std::optional<%s> value) {\n",
+                   enum_name.c_str());
       writer.Indent();
+      writer.Write("if (!value) return \"\";\n");
       writer.Write("for (auto [name, val] : %s_list) {\n", prop_id.c_str());
       writer.Indent();
-      writer.Write("if (val == value) {\n");
+      writer.Write("if (val == *value) {\n");
       writer.Indent();
       writer.Write("return name;\n");
       writer.Dedent();
@@ -350,7 +349,7 @@ bool GenerateSource(const sysprop::Properties& props,
 
       writer.Write(
           "LOG(FATAL) << \"Invalid value \" << "
-          "static_cast<std::int32_t>(value) << "
+          "static_cast<std::int32_t>(*value) << "
           "\" for property \" << \"%s\";\n",
           prop.prop_name().c_str());
 
@@ -371,12 +370,7 @@ bool GenerateSource(const sysprop::Properties& props,
     std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string prop_type = GetCppPropTypeName(prop);
 
-    if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
-      std::string enum_name = GetCppEnumName(prop);
-    }
-
-    writer.Write("std::optional<%s> %s() {\n", prop_type.c_str(),
-                 prop_id.c_str());
+    writer.Write("%s %s() {\n", prop_type.c_str(), prop_id.c_str());
     writer.Indent();
     writer.Write("return GetProp<%s>(\"%s\");\n", prop_type.c_str(),
                  prop.prop_name().c_str());
