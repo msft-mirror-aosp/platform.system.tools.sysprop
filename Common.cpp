@@ -264,6 +264,20 @@ bool IsDirectory(const std::string& path) {
   return S_ISDIR(st.st_mode);
 }
 
+bool IsListProp(const sysprop::Property& prop) {
+  switch (prop.type()) {
+    case sysprop::BooleanList:
+    case sysprop::IntegerList:
+    case sysprop::LongList:
+    case sysprop::DoubleList:
+    case sysprop::StringList:
+    case sysprop::EnumList:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::string GetModuleName(const sysprop::Properties& props) {
   const std::string& module = props.module();
   return module.substr(module.rfind('.') + 1);
