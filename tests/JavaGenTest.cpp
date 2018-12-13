@@ -168,7 +168,7 @@ public final class TestProperties {
     }
 
     private static <T> List<T> tryParseList(Function<String, T> elementParser, String str) {
-        if (str == null || str.equals("")) return null;
+        if (str == null || str.equals("")) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
@@ -180,7 +180,7 @@ public final class TestProperties {
     }
 
     private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
-        if (str == null || str.equals("")) return null;
+        if (str == null || str.equals("")) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
