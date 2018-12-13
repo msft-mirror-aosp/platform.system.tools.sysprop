@@ -156,7 +156,7 @@ public final class TestProperties {
     }
 
     private static String tryParseString(String str) {
-        return str.length() == 0 ? null : str;
+        return "".equals(str) ? null : str;
     }
 
     private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
@@ -168,7 +168,7 @@ public final class TestProperties {
     }
 
     private static <T> List<T> tryParseList(Function<String, T> elementParser, String str) {
-        if (str == null || str.equals("")) return new ArrayList<>();
+        if ("".equals(str)) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
@@ -180,7 +180,7 @@ public final class TestProperties {
     }
 
     private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
-        if (str == null || str.equals("")) return new ArrayList<>();
+        if ("".equals(str)) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
@@ -277,9 +277,9 @@ public final class TestProperties {
     }
 
     /** @hide */
-    public static Optional<List<Double>> test_double_list() {
+    public static List<Double> test_double_list() {
         String value = SystemProperties.get("vendor.test_double_list");
-        return Optional.ofNullable(tryParseList(v -> tryParseDouble(v), value));
+        return tryParseList(v -> tryParseDouble(v), value);
     }
 
     /** @hide */
@@ -287,15 +287,9 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_double_list", value == null ? "" : formatList(value));
     }
 
-    /** @hide */
-    public static Optional<Double> test_double_list(int index) {
-        return test_double_list().filter(list -> 0 <= index && index < list.size())
-                .map(list -> list.get(index));
-    }
-
-    public static Optional<List<Integer>> test_list_int() {
+    public static List<Integer> test_list_int() {
         String value = SystemProperties.get("vendor.test_list_int");
-        return Optional.ofNullable(tryParseList(v -> tryParseInteger(v), value));
+        return tryParseList(v -> tryParseInteger(v), value);
     }
 
     /** @hide */
@@ -303,26 +297,15 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
-    public static Optional<Integer> test_list_int(int index) {
-        return test_list_int().filter(list -> 0 <= index && index < list.size())
-                .map(list -> list.get(index));
-    }
-
     @SystemApi
-    public static Optional<List<String>> test_strlist() {
+    public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test.strlist");
-        return Optional.ofNullable(tryParseList(v -> tryParseString(v), value));
+        return tryParseList(v -> tryParseString(v), value);
     }
 
     /** @hide */
     public static void test_strlist(List<String> value) {
         SystemProperties.set("vendor.test.strlist", value == null ? "" : formatList(value));
-    }
-
-    @SystemApi
-    public static Optional<String> test_strlist(int index) {
-        return test_strlist().filter(list -> 0 <= index && index < list.size())
-                .map(list -> list.get(index));
     }
 
     /** @hide */
@@ -333,20 +316,14 @@ public final class TestProperties {
     }
 
     /** @hide */
-    public static Optional<List<el_values>> el() {
+    public static List<el_values> el() {
         String value = SystemProperties.get("vendor.el");
-        return Optional.ofNullable(tryParseEnumList(el_values.class, value));
+        return tryParseEnumList(el_values.class, value);
     }
 
     /** @hide */
     public static void el(List<el_values> value) {
         SystemProperties.set("vendor.el", value == null ? "" : formatList(value));
-    }
-
-    /** @hide */
-    public static Optional<el_values> el(int index) {
-        return el().filter(list -> 0 <= index && index < list.size())
-                .map(list -> list.get(index));
     }
 }
 )";
