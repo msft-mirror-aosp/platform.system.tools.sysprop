@@ -138,7 +138,6 @@ std::string GetJavaTypeName(const sysprop::Property& prop);
 std::string GetJavaEnumTypeName(const sysprop::Property& prop);
 std::string GetJavaPackageName(const sysprop::Properties& props);
 std::string GetJavaClassName(const sysprop::Properties& props);
-bool IsListProp(const sysprop::Property& prop);
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope);
 bool GenerateJavaClass(const sysprop::Properties& props,
                        std::string* java_result, std::string* err);
@@ -235,20 +234,6 @@ std::string GetJavaPackageName(const sysprop::Properties& props) {
 std::string GetJavaClassName(const sysprop::Properties& props) {
   const std::string& module = props.module();
   return module.substr(module.rfind('.') + 1);
-}
-
-bool IsListProp(const sysprop::Property& prop) {
-  switch (prop.type()) {
-    case sysprop::BooleanList:
-    case sysprop::IntegerList:
-    case sysprop::LongList:
-    case sysprop::DoubleList:
-    case sysprop::StringList:
-    case sysprop::EnumList:
-      return true;
-    default:
-      return false;
-  }
 }
 
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
