@@ -113,7 +113,7 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
     for (auto&& element : android::base::Split(str, ",")) {
-        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str());
+        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str()));
     }
     return ret;
 }
@@ -381,11 +381,11 @@ bool GenerateSource(const sysprop::Properties& props,
       writer.Write("\nbool %s(const %s& value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
-      writer.Write(
-          "return __system_property_set(\"%s\", "
-          "%s.c_str()) == 0;\n",
-          prop.prop_name().c_str(),
-          prop.type() == sysprop::String ? "value" : "FormatValue(value)");
+      writer.Write("return __system_property_set(\"%s\", %s) == 0;\n",
+                   prop.prop_name().c_str(),
+                   prop.type() == sysprop::String
+                       ? "value ? value->c_str() : \"\""
+                       : "FormatValue(value).c_str()");
       writer.Dedent();
       writer.Write("}\n");
     }

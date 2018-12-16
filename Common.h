@@ -26,6 +26,7 @@ inline static constexpr const char* kGeneratedFileFooterComments =
 bool CreateDirectories(const std::string& path);
 std::string GetModuleName(const sysprop::Properties& props);
 bool IsDirectory(const std::string& path);
+bool IsListProp(const sysprop::Property& prop);
 bool ParseProps(const std::string& file_path, sysprop::Properties* props,
                 std::string* err);
 std::string ApiNameToIdentifier(const std::string& name);

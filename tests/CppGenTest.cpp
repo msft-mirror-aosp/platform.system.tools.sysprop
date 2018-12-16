@@ -302,7 +302,7 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
     for (auto&& element : android::base::Split(str, ",")) {
-        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str());
+        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str()));
     }
     return ret;
 }
@@ -388,7 +388,7 @@ std::optional<std::string> test_string() {
 }
 
 bool test_string(const std::optional<std::string>& value) {
-    return __system_property_set("android.test.string", value.c_str()) == 0;
+    return __system_property_set("android.test.string", value ? value->c_str() : "") == 0;
 }
 
 std::optional<test_enum_values> test_enum() {
