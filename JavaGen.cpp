@@ -239,6 +239,7 @@ std::string GetJavaClassName(const sysprop::Properties& props) {
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
   switch (scope) {
     case sysprop::System:
+      writer.Write("/** @hide */\n");
       writer.Write("@SystemApi\n");
       break;
     case sysprop::Internal:
