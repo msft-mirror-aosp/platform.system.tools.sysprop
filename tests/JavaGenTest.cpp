@@ -222,6 +222,7 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_int", value == null ? "" : value.toString());
     }
 
+    /** @hide */
     @SystemApi
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
@@ -265,6 +266,7 @@ public final class TestProperties {
         SystemProperties.set("ro.vendor.test.b", value == null ? "" : value.toString());
     }
 
+    /** @hide */
     @SystemApi
     public static Optional<Long> vendor_os_test_long() {
         String value = SystemProperties.get("vendor.vendor.os_test-long");
@@ -297,6 +299,7 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
+    /** @hide */
     @SystemApi
     public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test.strlist");
