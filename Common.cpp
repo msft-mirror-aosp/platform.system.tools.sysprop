@@ -116,7 +116,7 @@ bool ValidateProp(const sysprop::Properties& props,
 
     std::unordered_set<std::string> name_set;
     for (const std::string& name : names) {
-      if (!name_set.insert(name).second) {
+      if (!name_set.insert(ToUpper(name)).second) {
         if (err)
           *err = "Duplicated enum value \"" + name + "\" for API \"" +
                  prop.api_name() + "\"";
@@ -309,6 +309,13 @@ bool ParseProps(const std::string& input_file_path, sysprop::Properties* props,
   }
 
   return true;
+}
+
+std::string ToUpper(std::string str) {
+  for (char& ch : str) {
+    ch = toupper(ch);
+  }
+  return str;
 }
 
 std::string ApiNameToIdentifier(const std::string& name) {

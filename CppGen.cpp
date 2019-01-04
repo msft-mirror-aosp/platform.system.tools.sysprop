@@ -260,7 +260,7 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
       writer.Indent();
       for (const std::string& name :
            android::base::Split(prop.enum_values(), "|")) {
-        writer.Write("%s,\n", name.c_str());
+        writer.Write("%s,\n", ToUpper(name).c_str());
       }
       writer.Dedent();
       writer.Write("};\n\n");
@@ -310,7 +310,7 @@ bool GenerateSource(const sysprop::Properties& props,
     for (const std::string& name :
          android::base::Split(prop.enum_values(), "|")) {
       writer.Write("{\"%s\", %s::%s},\n", name.c_str(), enum_name.c_str(),
-                   name.c_str());
+                   ToUpper(name).c_str());
     }
     writer.Dedent();
     writer.Write("};\n\n");
