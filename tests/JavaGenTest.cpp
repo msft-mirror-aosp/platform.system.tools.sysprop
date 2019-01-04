@@ -201,6 +201,16 @@ public final class TestProperties {
         return joiner.toString();
     }
 
+    private static <T extends Enum<T>> String formatEnumList(List<T> list, Function<T, String> elementFormatter) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (T element : list) {
+            joiner.add(element == null ? "" : elementFormatter.apply(element));
+        }
+
+        return joiner.toString();
+    }
+
     /** @hide */
     public static Optional<Double> test_double() {
         String value = SystemProperties.get("vendor.test_double");
@@ -236,13 +246,20 @@ public final class TestProperties {
 
     /** @hide */
     public static enum test_enum_values {
-        a,
-        b,
-        c,
-        D,
-        e,
-        f,
-        G,
+        A("a"),
+        B("b"),
+        C("c"),
+        D("D"),
+        E("e"),
+        F("f"),
+        G("G");
+        private final String propValue;
+        private test_enum_values(String propValue) {
+            this.propValue = propValue;
+        }
+        public String getPropValue() {
+            return propValue;
+        }
     }
 
     /** @hide */
@@ -253,7 +270,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void test_enum(test_enum_values value) {
-        SystemProperties.set("vendor.test.enum", value == null ? "" : value.toString());
+        SystemProperties.set("vendor.test.enum", value == null ? "" : value.getPropValue());
     }
 
     public static Optional<Boolean> test_BOOLeaN() {
@@ -313,9 +330,16 @@ public final class TestProperties {
 
     /** @hide */
     public static enum el_values {
-        enu,
-        mva,
-        lue,
+        ENU("enu"),
+        MVA("mva"),
+        LUE("lue");
+        private final String propValue;
+        private el_values(String propValue) {
+            this.propValue = propValue;
+        }
+        public String getPropValue() {
+            return propValue;
+        }
     }
 
     /** @hide */
@@ -326,7 +350,7 @@ public final class TestProperties {
 
     /** @hide */
     public static void el(List<el_values> value) {
-        SystemProperties.set("vendor.el", value == null ? "" : formatList(value));
+        SystemProperties.set("vendor.el", value == null ? "" : formatEnumList(value, el_values::getPropValue));
     }
 }
 )";
