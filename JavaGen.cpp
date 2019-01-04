@@ -90,7 +90,7 @@ private static String tryParseString(String str) {
 
 private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
     try {
-        return Enum.valueOf(enumType, str);
+        return Enum.valueOf(enumType, str.toUpperCase());
     } catch (IllegalArgumentException e) {
         return null;
     }
