@@ -125,12 +125,12 @@ std::optional<std::string> test_string();
 bool test_string(const std::optional<std::string>& value);
 
 enum class test_enum_values {
-    a,
-    b,
-    c,
+    A,
+    B,
+    C,
     D,
-    e,
-    f,
+    E,
+    F,
     G,
 };
 
@@ -153,9 +153,9 @@ std::vector<std::optional<std::string>> test_strlist();
 bool test_strlist(const std::vector<std::optional<std::string>>& value);
 
 enum class el_values {
-    enu,
-    mva,
-    lue,
+    ENU,
+    MVA,
+    LUE,
 };
 
 std::vector<std::optional<el_values>> el();
@@ -191,12 +191,12 @@ using namespace android::sysprop::PlatformProperties;
 template <typename T> T DoParse(const char* str);
 
 constexpr const std::pair<const char*, test_enum_values> test_enum_list[] = {
-    {"a", test_enum_values::a},
-    {"b", test_enum_values::b},
-    {"c", test_enum_values::c},
+    {"a", test_enum_values::A},
+    {"b", test_enum_values::B},
+    {"c", test_enum_values::C},
     {"D", test_enum_values::D},
-    {"e", test_enum_values::e},
-    {"f", test_enum_values::f},
+    {"e", test_enum_values::E},
+    {"f", test_enum_values::F},
     {"G", test_enum_values::G},
 };
 
@@ -222,9 +222,9 @@ std::string FormatValue(std::optional<test_enum_values> value) {
 }
 
 constexpr const std::pair<const char*, el_values> el_list[] = {
-    {"enu", el_values::enu},
-    {"mva", el_values::mva},
-    {"lue", el_values::lue},
+    {"enu", el_values::ENU},
+    {"mva", el_values::MVA},
+    {"lue", el_values::LUE},
 };
 
 template <>

@@ -90,7 +90,7 @@ private static String tryParseString(String str) {
 
 private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
     try {
-        return Enum.valueOf(enumType, str);
+        return Enum.valueOf(enumType, str.toUpperCase());
     } catch (IllegalArgumentException e) {
         return null;
     }
@@ -129,6 +129,16 @@ private static <T> String formatList(List<T> list) {
 
     return joiner.toString();
 }
+
+private static <T extends Enum<T>> String formatEnumList(List<T> list, Function<T, String> elementFormatter) {
+    StringJoiner joiner = new StringJoiner(",");
+
+    for (T element : list) {
+        joiner.add(element == null ? "" : elementFormatter.apply(element));
+    }
+
+    return joiner.toString();
+}
 )";
 
 const std::regex kRegexDot{"\\."};
@@ -138,6 +148,8 @@ std::string GetJavaTypeName(const sysprop::Property& prop);
 std::string GetJavaEnumTypeName(const sysprop::Property& prop);
 std::string GetJavaPackageName(const sysprop::Properties& props);
 std::string GetJavaClassName(const sysprop::Properties& props);
+std::string GetParsingExpression(const sysprop::Property& prop);
+std::string GetFormattingExpression(const sysprop::Property& prop);
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope);
 bool GenerateJavaClass(const sysprop::Properties& props,
                        std::string* java_result, std::string* err);
@@ -226,6 +238,19 @@ std::string GetParsingExpression(const sysprop::Property& prop) {
   return "tryParseList(" + element_parser + ", value)";
 }
 
+std::string GetFormattingExpression(const sysprop::Property& prop) {
+  if (prop.type() == sysprop::Enum) {
+    return "value.getPropValue()";
+  } else if (prop.type() == sysprop::EnumList) {
+    return "formatEnumList(value, " + GetJavaEnumTypeName(prop) +
+           "::getPropValue)";
+  } else if (IsListProp(prop)) {
+    return "formatList(value)";
+  } else {
+    return "value.toString()";
+  }
+}
+
 std::string GetJavaPackageName(const sysprop::Properties& props) {
   const std::string& module = props.module();
   return module.substr(0, module.rfind('.'));
@@ -290,10 +315,31 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("public static enum %s {\n",
                    GetJavaEnumTypeName(prop).c_str());
       writer.Indent();
-      for (const std::string& name :
-           android::base::Split(prop.enum_values(), "|")) {
-        writer.Write("%s,\n", name.c_str());
+      std::vector<std::string> values =
+          android::base::Split(prop.enum_values(), "|");
+      for (int i = 0; i < values.size(); ++i) {
+        const std::string& name = values[i];
+        writer.Write("%s(\"%s\")", ToUpper(name).c_str(), name.c_str());
+        if (i + 1 < values.size()) {
+          writer.Write(",\n");
+        } else {
+          writer.Write(";\n");
+        }
       }
+      writer.Write(
+          "private final String propValue;\n"
+          "private %s(String propValue) {\n",
+          GetJavaEnumTypeName(prop).c_str());
+      writer.Indent();
+      writer.Write("this.propValue = propValue;\n");
+      writer.Dedent();
+      writer.Write(
+          "}\n"
+          "public String getPropValue() {\n");
+      writer.Indent();
+      writer.Write("return propValue;\n");
+      writer.Dedent();
+      writer.Write("}\n");
       writer.Dedent();
       writer.Write("}\n\n");
     }
@@ -333,7 +379,7 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Indent();
       writer.Write("SystemProperties.set(\"%s\", value == null ? \"\" : %s);\n",
                    prop.prop_name().c_str(),
-                   IsListProp(prop) ? "formatList(value)" : "value.toString()");
+                   GetFormattingExpression(prop).c_str());
       writer.Dedent();
       writer.Write("}\n");
     }

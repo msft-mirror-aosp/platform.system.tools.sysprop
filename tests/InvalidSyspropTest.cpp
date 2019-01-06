@@ -81,7 +81,7 @@ module: "vendor.module.name"
 prop {
     api_name: "status"
     type: Enum
-    enum_values: "on|off|intermediate|on"
+    enum_values: "oN|off|intermediate|On"
     scope: Public
     access: ReadWrite
 }
@@ -148,7 +148,7 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kEmptyProp, "There is no defined property"},
     {kInvalidApiName, "Invalid API name \"!@#$\""},
     {kEmptyEnumValues, "Invalid enum value \"\" for API \"empty_enum_value\""},
-    {kDuplicatedEnumValue, "Duplicated enum value \"on\" for API \"status\""},
+    {kDuplicatedEnumValue, "Duplicated enum value \"On\" for API \"status\""},
     {kInvalidModuleName, "Invalid module name \"\""},
     {kInvalidNamespaceForPlatform,
      "Prop \"vendor.build.utc_long\" owned by platform cannot have vendor. or "
