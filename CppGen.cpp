@@ -184,7 +184,7 @@ std::string GetCppEnumName(const sysprop::Property& prop);
 std::string GetCppPropTypeName(const sysprop::Property& prop);
 std::string GetCppNamespace(const sysprop::Properties& props);
 
-bool GenerateHeader(const sysprop::Properties& props,
+bool GenerateHeader(const sysprop::Properties& props, sysprop::Scope scope,
                     std::string* header_result, std::string* err);
 bool GenerateSource(const sysprop::Properties& props,
                     const std::string& include_name, std::string* source_result,
@@ -234,7 +234,8 @@ std::string GetCppNamespace(const sysprop::Properties& props) {
   return std::regex_replace(props.module(), kRegexDot, "::");
 }
 
-bool GenerateHeader(const sysprop::Properties& props, std::string* header_result,
+bool GenerateHeader(const sysprop::Properties& props, sysprop::Scope scope,
+                    std::string* header_result,
                     [[maybe_unused]] std::string* err) {
   CodeWriter writer(kIndent);
 
@@ -248,10 +249,20 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
   std::string cpp_namespace = GetCppNamespace(props);
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
 
-  for (int i = 0; i < props.prop_size(); ++i) {
-    if (i > 0) writer.Write("\n");
+  bool first = true;
 
+  for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
+
+    // Scope: Internal > System > Public
+    if (prop.scope() > scope) continue;
+
+    if (!first) {
+      writer.Write("\n");
+    } else {
+      first = false;
+    }
+
     std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string prop_type = GetCppPropTypeName(prop);
 
@@ -267,7 +278,7 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
     }
 
     writer.Write("%s %s();\n", prop_type.c_str(), prop_id.c_str());
-    if (prop.access() != sysprop::Readonly) {
+    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
     }
@@ -401,7 +412,8 @@ bool GenerateSource(const sysprop::Properties& props,
 }  // namespace
 
 bool GenerateCppFiles(const std::string& input_file_path,
-                      const std::string& header_output_dir,
+                      const std::string& header_dir,
+                      const std::string& system_header_dir,
                       const std::string& source_output_dir,
                       const std::string& include_name, std::string* err) {
   sysprop::Properties props;
@@ -410,36 +422,35 @@ bool GenerateCppFiles(const std::string& input_file_path,
     return false;
   }
 
-  std::string header_result, source_result;
-
-  if (!GenerateHeader(props, &header_result, err)) {
-    return false;
-  }
-
-  if (!GenerateSource(props, include_name, &source_result, err)) {
-    return false;
-  }
-
   std::string output_basename = android::base::Basename(input_file_path);
 
-  std::string header_path = header_output_dir + "/" + output_basename + ".h";
+  for (auto&& [scope, dir] : {
+           std::pair(sysprop::Internal, header_dir),
+           std::pair(sysprop::System, system_header_dir),
+       }) {
+    std::string result;
+    if (!GenerateHeader(props, scope, &result, err)) {
+      return false;
+    }
+
+    if (!IsDirectory(dir) && !CreateDirectories(dir)) {
+      *err = "Creating directory to " + dir + " failed: " + strerror(errno);
+      return false;
+    }
+
+    std::string path = dir + "/" + output_basename + ".h";
+
+    if (!android::base::WriteStringToFile(result, path)) {
+      *err =
+          "Writing generated header to " + path + " failed: " + strerror(errno);
+      return false;
+    }
+  }
+
   std::string source_path = source_output_dir + "/" + output_basename + ".cpp";
+  std::string source_result;
 
-  if (!IsDirectory(header_output_dir) && !CreateDirectories(header_output_dir)) {
-    *err = "Creating directory to " + header_output_dir +
-           " failed: " + strerror(errno);
-    return false;
-  }
-
-  if (!IsDirectory(source_output_dir) && !CreateDirectories(source_output_dir)) {
-    *err = "Creating directory to " + source_output_dir +
-           " failed: " + strerror(errno);
-    return false;
-  }
-
-  if (!android::base::WriteStringToFile(header_result, header_path)) {
-    *err = "Writing generated header to " + header_path +
-           " failed: " + strerror(errno);
+  if (!GenerateSource(props, include_name, &source_result, err)) {
     return false;
   }
 
