@@ -20,7 +20,8 @@
 #include <string>
 
 bool GenerateCppFiles(const std::string& input_file_path,
-                      const std::string& header_output_dir,
+                      const std::string& header_dir,
+                      const std::string& system_header_dir,
                       const std::string& source_output_dir,
                       const std::string& include_name, std::string* err);
 
