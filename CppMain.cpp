@@ -29,15 +29,17 @@ namespace {
 
 struct Arguments {
   std::string input_file_path;
-  std::string header_output_dir;
-  std::string source_output_dir;
+  std::string header_dir;
+  std::string system_header_dir;
+  std::string source_dir;
   std::string include_name;
 };
 
 [[noreturn]] void PrintUsage(const char* exe_name) {
   std::printf(
-      "Usage: %s [--header-output-dir dir] [--source-output-dir dir] "
-      "[--include-name name] sysprop_file\n",
+      "Usage: %s --header-dir dir --source-dir dir "
+      "--include-name name --system-header-dir dir "
+      "sysprop_file\n",
       exe_name);
   std::exit(EXIT_FAILURE);
 }
@@ -45,8 +47,9 @@ struct Arguments {
 bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
   for (;;) {
     static struct option long_options[] = {
-        {"header-output-dir", required_argument, 0, 'h'},
-        {"source-output-dir", required_argument, 0, 's'},
+        {"header-dir", required_argument, 0, 'h'},
+        {"system-header-dir", required_argument, 0, 's'},
+        {"source-dir", required_argument, 0, 'c'},
         {"include-name", required_argument, 0, 'n'},
     };
 
@@ -55,10 +58,13 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
 
     switch (opt) {
       case 'h':
-        args->header_output_dir = optarg;
+        args->header_dir = optarg;
         break;
       case 's':
-        args->source_output_dir = optarg;
+        args->system_header_dir = optarg;
+        break;
+      case 'c':
+        args->source_dir = optarg;
         break;
       case 'n':
         args->include_name = optarg;
@@ -78,9 +84,12 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
     return false;
   }
 
+  if (args->header_dir.empty() || args->system_header_dir.empty() ||
+      args->source_dir.empty() || args->include_name.empty()) {
+    PrintUsage(argv[0]);
+  }
+
   args->input_file_path = argv[optind];
-  if (args->header_output_dir.empty()) args->header_output_dir = ".";
-  if (args->source_output_dir.empty()) args->source_output_dir = ".";
 
   return true;
 }
@@ -95,8 +104,9 @@ int main(int argc, char* argv[]) {
     PrintUsage(argv[0]);
   }
 
-  if (!GenerateCppFiles(args.input_file_path, args.header_output_dir,
-                        args.source_output_dir, args.include_name, &err)) {
+  if (!GenerateCppFiles(args.input_file_path, args.header_dir,
+                        args.system_header_dir, args.source_dir,
+                        args.include_name, &err)) {
     LOG(FATAL) << "Error during generating cpp sysprop from "
                << args.input_file_path << ": " << err;
   }
