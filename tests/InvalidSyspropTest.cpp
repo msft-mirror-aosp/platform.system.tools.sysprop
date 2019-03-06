@@ -124,6 +124,20 @@ prop {
 }
 )";
 
+constexpr const char* kIntegerAsBoolWithWrongType =
+    R"(
+owner: Platform
+module: "android.os.LongProp"
+prop {
+    api_name: "longprop"
+    type: Long
+    scope: Internal
+    prop_name: "long.prop"
+    access: ReadWrite
+    integer_as_bool: true
+}
+)";
+
 /*
  * TODO: Some properties don't have prefix "ro." but not written in any
  * Java or C++ codes. They might be misnamed and should be readonly. Will
@@ -157,6 +171,8 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kRoPrefixForReadWriteProperty,
      "Prop \"ro.vendor.i_am_readwrite\" is ReadWrite and also have prefix "
      "\"ro.\""},
+    {kIntegerAsBoolWithWrongType,
+     "Prop \"long.prop\" has integer_as_bool: true, but not a boolean"},
     /*    {kNoRoPrefixForReadonlyProperty,
          "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
          "\"ro.\""},*/

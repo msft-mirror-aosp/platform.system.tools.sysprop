@@ -149,9 +149,11 @@ template <typename T>
     if (value.empty()) return "";
 
     std::string ret;
+    bool first = true;
 
     for (auto&& element : value) {
-        if (ret.empty()) ret += ',';
+        if (!first) ret += ",";
+        else first = false;
         if constexpr(std::is_same_v<T, std::optional<std::string>>) {
             if (element) ret += *element;
         } else {
@@ -378,11 +380,26 @@ std::string GenerateSource(const sysprop::Properties& props,
       writer.Write("\nbool %s(const %s& value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
+
+      const char* format_expr = "FormatValue(value).c_str()";
+
+      // Specialized formatters here
+      if (prop.type() == sysprop::String) {
+        format_expr = "value ? value->c_str() : \"\"";
+      } else if (prop.integer_as_bool()) {
+        if (prop.type() == sysprop::Boolean) {
+          // optional<bool> -> optional<int>
+          format_expr = "FormatValue(std::optional<int>(value)).c_str()";
+        } else if (prop.type() == sysprop::BooleanList) {
+          // vector<optional<bool>> -> vector<optional<int>>
+          format_expr =
+              "FormatValue(std::vector<std::optional<int>>("
+              "value.begin(), value.end())).c_str()";
+        }
+      }
+
       writer.Write("return __system_property_set(\"%s\", %s) == 0;\n",
-                   prop.prop_name().c_str(),
-                   prop.type() == sysprop::String
-                       ? "value ? value->c_str() : \"\""
-                       : "FormatValue(value).c_str()");
+                   prop.prop_name().c_str(), format_expr);
       writer.Dedent();
       writer.Write("}\n");
     }
