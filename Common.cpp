@@ -193,6 +193,15 @@ bool ValidateProp(const sysprop::Properties& props,
       break;
   }
 
+  if (prop.integer_as_bool() && !(prop.type() == sysprop::Boolean ||
+                                  prop.type() == sysprop::BooleanList)) {
+    if (err) {
+      *err = "Prop \"" + prop_name +
+             "\" has integer_as_bool: true, but not a boolean";
+    }
+    return false;
+  }
+
   return true;
 }
 

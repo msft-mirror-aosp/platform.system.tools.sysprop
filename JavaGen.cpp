@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 )";
 
@@ -239,7 +240,17 @@ std::string GetParsingExpression(const sysprop::Property& prop) {
 }
 
 std::string GetFormattingExpression(const sysprop::Property& prop) {
-  if (prop.type() == sysprop::Enum) {
+  if (prop.integer_as_bool()) {
+    if (prop.type() == sysprop::Boolean) {
+      // Boolean -> Integer String
+      return "(value ? \"1\" : \"0\")";
+    } else {
+      // List<Boolean> -> String directly
+      return "value.stream().map("
+             "x -> x == null ? \"\" : (x ? \"1\" : \"0\"))"
+             ".collect(Collectors.joining(\",\"))";
+    }
+  } else if (prop.type() == sysprop::Enum) {
     return "value.getPropValue()";
   } else if (prop.type() == sysprop::EnumList) {
     return "formatEnumList(value, " + GetJavaEnumTypeName(prop) +

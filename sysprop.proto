@@ -59,6 +59,7 @@ message Property {
   Scope scope = 4;
   string prop_name = 5;
   string enum_values = 6;
+  bool integer_as_bool = 7;
 }
 
 message Properties {
