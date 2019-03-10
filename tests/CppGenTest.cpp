@@ -362,9 +362,11 @@ template <typename T>
     if (value.empty()) return "";
 
     std::string ret;
+    bool first = true;
 
     for (auto&& element : value) {
-        if (ret.empty()) ret += ',';
+        if (!first) ret += ",";
+        else first = false;
         if constexpr(std::is_same_v<T, std::optional<std::string>>) {
             if (element) ret += *element;
         } else {
