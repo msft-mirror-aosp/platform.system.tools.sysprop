@@ -133,8 +133,10 @@ bool ValidateProp(const sysprop::Properties& props,
     return false;
   }
 
-  static const std::regex vendor_regex("([^.]+\\.)?vendor\\..+");
-  static const std::regex odm_regex("([^.]+\\.)?odm\\..+");
+  static const std::regex vendor_regex(
+      "(init\\.svc\\.|ro\\.|persist\\.)?vendor\\..+|ro\\.hardware\\..+");
+  static const std::regex odm_regex(
+      "(init\\.svc\\.|ro\\.|persist\\.)?odm\\..+|ro\\.hardware\\..+");
 
   switch (props.owner()) {
     case sysprop::Platform:
