@@ -43,18 +43,18 @@ constexpr const char* kCppHeaderIncludes =
 )";
 
 constexpr const char* kCppSourceIncludes =
-    R"(#include <cstring>
-#include <iterator>
-#include <type_traits>
+    R"(#include <cctype>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <limits>
 #include <utility>
 
 #include <strings.h>
 #include <sys/system_properties.h>
 
-#include <android-base/logging.h>
 #include <android-base/parseint.h>
-#include <android-base/stringprintf.h>
-#include <android-base/strings.h>
+#include <log/log.h>
 
 )";
 
@@ -80,14 +80,12 @@ template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
 
 template <> [[maybe_unused]] std::optional<std::int32_t> DoParse(const char* str) {
     std::int32_t ret;
-    bool success = android::base::ParseInt(str, &ret);
-    return success ? std::make_optional(ret) : std::nullopt;
+    return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<std::int64_t> DoParse(const char* str) {
     std::int64_t ret;
-    bool success = android::base::ParseInt(str, &ret);
-    return success ? std::make_optional(ret) : std::nullopt;
+    return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
@@ -99,7 +97,7 @@ template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
         return std::nullopt;
     }
     if (str == end || *end != '\0') {
-        errno = old_errno;
+        errno = EINVAL;
         return std::nullopt;
     }
     errno = old_errno;
@@ -112,8 +110,16 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
-    for (auto&& element : android::base::Split(str, ",")) {
-        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str()));
+    const char* p = str;
+    for (;;) {
+        const char* found = p;
+        while (*found != '\0' && *found != ',') {
+            ++found;
+        }
+        std::string value(p, found);
+        ret.emplace_back(DoParse<typename Vec::value_type>(value.c_str()));
+        if (*found == '\0') break;
+        p = found + 1;
     }
     return ret;
 }
@@ -135,9 +141,10 @@ template <typename T> inline T TryParse(const char* str) {
 }
 
 [[maybe_unused]] std::string FormatValue(const std::optional<double>& value) {
-    return value
-        ? android::base::StringPrintf("%.*g", std::numeric_limits<double>::max_digits10, *value)
-        : "";
+    if (!value) return "";
+    char buf[1024];
+    std::sprintf(buf, "%.*g", std::numeric_limits<double>::max_digits10, *value);
+    return buf;
 }
 
 [[maybe_unused]] std::string FormatValue(const std::optional<bool>& value) {
@@ -347,9 +354,8 @@ std::string GenerateSource(const sysprop::Properties& props,
       writer.Write("}\n");
 
       writer.Write(
-          "LOG(FATAL) << \"Invalid value \" << "
-          "static_cast<std::int32_t>(*value) << "
-          "\" for property \" << \"%s\";\n",
+          "LOG_ALWAYS_FATAL(\"Invalid value %%d for property %s\", "
+          "static_cast<std::int32_t>(*value));\n",
           prop.prop_name().c_str());
 
       writer.Write("__builtin_unreachable();\n");
