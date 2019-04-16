@@ -114,6 +114,7 @@ import java.util.function.Function;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 public final class TestProperties {
     private TestProperties () {}

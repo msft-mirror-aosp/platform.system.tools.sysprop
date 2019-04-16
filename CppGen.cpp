@@ -43,18 +43,18 @@ constexpr const char* kCppHeaderIncludes =
 )";
 
 constexpr const char* kCppSourceIncludes =
-    R"(#include <cstring>
-#include <iterator>
-#include <type_traits>
+    R"(#include <cctype>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <limits>
 #include <utility>
 
 #include <strings.h>
 #include <sys/system_properties.h>
 
-#include <android-base/logging.h>
 #include <android-base/parseint.h>
-#include <android-base/stringprintf.h>
-#include <android-base/strings.h>
+#include <log/log.h>
 
 )";
 
@@ -80,14 +80,12 @@ template <> [[maybe_unused]] std::optional<bool> DoParse(const char* str) {
 
 template <> [[maybe_unused]] std::optional<std::int32_t> DoParse(const char* str) {
     std::int32_t ret;
-    bool success = android::base::ParseInt(str, &ret);
-    return success ? std::make_optional(ret) : std::nullopt;
+    return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<std::int64_t> DoParse(const char* str) {
     std::int64_t ret;
-    bool success = android::base::ParseInt(str, &ret);
-    return success ? std::make_optional(ret) : std::nullopt;
+    return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
@@ -99,7 +97,7 @@ template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
         return std::nullopt;
     }
     if (str == end || *end != '\0') {
-        errno = old_errno;
+        errno = EINVAL;
         return std::nullopt;
     }
     errno = old_errno;
@@ -112,8 +110,16 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
-    for (auto&& element : android::base::Split(str, ",")) {
-        ret.emplace_back(DoParse<typename Vec::value_type>(element.c_str()));
+    const char* p = str;
+    for (;;) {
+        const char* found = p;
+        while (*found != '\0' && *found != ',') {
+            ++found;
+        }
+        std::string value(p, found);
+        ret.emplace_back(DoParse<typename Vec::value_type>(value.c_str()));
+        if (*found == '\0') break;
+        p = found + 1;
     }
     return ret;
 }
@@ -135,9 +141,10 @@ template <typename T> inline T TryParse(const char* str) {
 }
 
 [[maybe_unused]] std::string FormatValue(const std::optional<double>& value) {
-    return value
-        ? android::base::StringPrintf("%.*g", std::numeric_limits<double>::max_digits10, *value)
-        : "";
+    if (!value) return "";
+    char buf[1024];
+    std::sprintf(buf, "%.*g", std::numeric_limits<double>::max_digits10, *value);
+    return buf;
 }
 
 [[maybe_unused]] std::string FormatValue(const std::optional<bool>& value) {
@@ -149,9 +156,11 @@ template <typename T>
     if (value.empty()) return "";
 
     std::string ret;
+    bool first = true;
 
     for (auto&& element : value) {
-        if (ret.empty()) ret += ',';
+        if (!first) ret += ",";
+        else first = false;
         if constexpr(std::is_same_v<T, std::optional<std::string>>) {
             if (element) ret += *element;
         } else {
@@ -179,21 +188,14 @@ T GetProp(const char* key) {
 const std::regex kRegexDot{"\\."};
 const std::regex kRegexUnderscore{"_"};
 
-std::string GetHeaderIncludeGuardName(const sysprop::Properties& props);
 std::string GetCppEnumName(const sysprop::Property& prop);
 std::string GetCppPropTypeName(const sysprop::Property& prop);
 std::string GetCppNamespace(const sysprop::Properties& props);
 
-bool GenerateHeader(const sysprop::Properties& props,
-                    std::string* header_result, std::string* err);
-bool GenerateSource(const sysprop::Properties& props,
-                    const std::string& include_name, std::string* source_result,
-                    std::string* err);
-
-std::string GetHeaderIncludeGuardName(const sysprop::Properties& props) {
-  return "SYSPROPGEN_" + std::regex_replace(props.module(), kRegexDot, "_") +
-         "_H_";
-}
+std::string GenerateHeader(const sysprop::Properties& props,
+                           sysprop::Scope scope);
+std::string GenerateSource(const sysprop::Properties& props,
+                           const std::string& include_name);
 
 std::string GetCppEnumName(const sysprop::Property& prop) {
   return ApiNameToIdentifier(prop.api_name()) + "_values";
@@ -234,24 +236,32 @@ std::string GetCppNamespace(const sysprop::Properties& props) {
   return std::regex_replace(props.module(), kRegexDot, "::");
 }
 
-bool GenerateHeader(const sysprop::Properties& props, std::string* header_result,
-                    [[maybe_unused]] std::string* err) {
+std::string GenerateHeader(const sysprop::Properties& props,
+                           sysprop::Scope scope) {
   CodeWriter writer(kIndent);
 
   writer.Write("%s", kGeneratedFileFooterComments);
 
-  std::string include_guard_name = GetHeaderIncludeGuardName(props);
-  writer.Write("#ifndef %s\n#define %s\n\n", include_guard_name.c_str(),
-               include_guard_name.c_str());
+  writer.Write("#pragma once\n\n");
   writer.Write("%s", kCppHeaderIncludes);
 
   std::string cpp_namespace = GetCppNamespace(props);
   writer.Write("namespace %s {\n\n", cpp_namespace.c_str());
 
-  for (int i = 0; i < props.prop_size(); ++i) {
-    if (i > 0) writer.Write("\n");
+  bool first = true;
 
+  for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
+
+    // Scope: Internal > System > Public
+    if (prop.scope() > scope) continue;
+
+    if (!first) {
+      writer.Write("\n");
+    } else {
+      first = false;
+    }
+
     std::string prop_id = ApiNameToIdentifier(prop.api_name());
     std::string prop_type = GetCppPropTypeName(prop);
 
@@ -267,23 +277,19 @@ bool GenerateHeader(const sysprop::Properties& props, std::string* header_result
     }
 
     writer.Write("%s %s();\n", prop_type.c_str(), prop_id.c_str());
-    if (prop.access() != sysprop::Readonly) {
+    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
     }
   }
 
-  writer.Write("\n}  // namespace %s\n\n", cpp_namespace.c_str());
+  writer.Write("\n}  // namespace %s\n", cpp_namespace.c_str());
 
-  writer.Write("#endif  // %s\n", include_guard_name.c_str());
-
-  *header_result = writer.Code();
-  return true;
+  return writer.Code();
 }
 
-bool GenerateSource(const sysprop::Properties& props,
-                    const std::string& include_name, std::string* source_result,
-                    [[maybe_unused]] std::string* err) {
+std::string GenerateSource(const sysprop::Properties& props,
+                           const std::string& include_name) {
   CodeWriter writer(kIndent);
   writer.Write("%s", kGeneratedFileFooterComments);
   writer.Write("#include <%s>\n\n", include_name.c_str());
@@ -348,9 +354,8 @@ bool GenerateSource(const sysprop::Properties& props,
       writer.Write("}\n");
 
       writer.Write(
-          "LOG(FATAL) << \"Invalid value \" << "
-          "static_cast<std::int32_t>(*value) << "
-          "\" for property \" << \"%s\";\n",
+          "LOG_ALWAYS_FATAL(\"Invalid value %%d for property %s\", "
+          "static_cast<std::int32_t>(*value));\n",
           prop.prop_name().c_str());
 
       writer.Write("__builtin_unreachable();\n");
@@ -381,11 +386,26 @@ bool GenerateSource(const sysprop::Properties& props,
       writer.Write("\nbool %s(const %s& value) {\n", prop_id.c_str(),
                    prop_type.c_str());
       writer.Indent();
+
+      const char* format_expr = "FormatValue(value).c_str()";
+
+      // Specialized formatters here
+      if (prop.type() == sysprop::String) {
+        format_expr = "value ? value->c_str() : \"\"";
+      } else if (prop.integer_as_bool()) {
+        if (prop.type() == sysprop::Boolean) {
+          // optional<bool> -> optional<int>
+          format_expr = "FormatValue(std::optional<int>(value)).c_str()";
+        } else if (prop.type() == sysprop::BooleanList) {
+          // vector<optional<bool>> -> vector<optional<int>>
+          format_expr =
+              "FormatValue(std::vector<std::optional<int>>("
+              "value.begin(), value.end())).c_str()";
+        }
+      }
+
       writer.Write("return __system_property_set(\"%s\", %s) == 0;\n",
-                   prop.prop_name().c_str(),
-                   prop.type() == sysprop::String
-                       ? "value ? value->c_str() : \"\""
-                       : "FormatValue(value).c_str()");
+                   prop.prop_name().c_str(), format_expr);
       writer.Dedent();
       writer.Write("}\n");
     }
@@ -393,15 +413,14 @@ bool GenerateSource(const sysprop::Properties& props,
 
   writer.Write("\n}  // namespace %s\n", cpp_namespace.c_str());
 
-  *source_result = writer.Code();
-
-  return true;
+  return writer.Code();
 }
 
 }  // namespace
 
 bool GenerateCppFiles(const std::string& input_file_path,
-                      const std::string& header_output_dir,
+                      const std::string& header_dir,
+                      const std::string& system_header_dir,
                       const std::string& source_output_dir,
                       const std::string& include_name, std::string* err) {
   sysprop::Properties props;
@@ -410,38 +429,29 @@ bool GenerateCppFiles(const std::string& input_file_path,
     return false;
   }
 
-  std::string header_result, source_result;
-
-  if (!GenerateHeader(props, &header_result, err)) {
-    return false;
-  }
-
-  if (!GenerateSource(props, include_name, &source_result, err)) {
-    return false;
-  }
-
   std::string output_basename = android::base::Basename(input_file_path);
 
-  std::string header_path = header_output_dir + "/" + output_basename + ".h";
+  for (auto&& [scope, dir] : {
+           std::pair(sysprop::Internal, header_dir),
+           std::pair(sysprop::System, system_header_dir),
+       }) {
+    if (!IsDirectory(dir) && !CreateDirectories(dir)) {
+      *err = "Creating directory to " + dir + " failed: " + strerror(errno);
+      return false;
+    }
+
+    std::string path = dir + "/" + output_basename + ".h";
+    std::string result = GenerateHeader(props, scope);
+
+    if (!android::base::WriteStringToFile(result, path)) {
+      *err =
+          "Writing generated header to " + path + " failed: " + strerror(errno);
+      return false;
+    }
+  }
+
   std::string source_path = source_output_dir + "/" + output_basename + ".cpp";
-
-  if (!IsDirectory(header_output_dir) && !CreateDirectories(header_output_dir)) {
-    *err = "Creating directory to " + header_output_dir +
-           " failed: " + strerror(errno);
-    return false;
-  }
-
-  if (!IsDirectory(source_output_dir) && !CreateDirectories(source_output_dir)) {
-    *err = "Creating directory to " + source_output_dir +
-           " failed: " + strerror(errno);
-    return false;
-  }
-
-  if (!android::base::WriteStringToFile(header_result, header_path)) {
-    *err = "Writing generated header to " + header_path +
-           " failed: " + strerror(errno);
-    return false;
-  }
+  std::string source_result = GenerateSource(props, include_name);
 
   if (!android::base::WriteStringToFile(source_result, source_path)) {
     *err = "Writing generated source to " + source_path +
