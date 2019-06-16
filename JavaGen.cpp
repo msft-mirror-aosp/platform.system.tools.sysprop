@@ -36,8 +36,8 @@ constexpr const char* kIndent = "    ";
 
 constexpr const char* kJavaFileImports =
     R"(import android.annotation.SystemApi;
-
 import android.os.SystemProperties;
+
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -274,7 +274,10 @@ std::string GetJavaClassName(const sysprop::Properties& props) {
 
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
   switch (scope) {
-    case sysprop::System:
+    // This is to restrict access from modules linking against SDK.
+    // TODO(b/131637873): remove this after cutting dependency on
+    // java_sdk_library
+    case sysprop::Public:
       writer.Write("/** @hide */\n");
       writer.Write("@SystemApi\n");
       break;

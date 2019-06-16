@@ -47,7 +47,7 @@ prop {
     api_name: "test.string"
     type: String
     prop_name: "vendor.test.string"
-    scope: System
+    scope: Public
     access: ReadWrite
 }
 
@@ -69,7 +69,7 @@ prop {
 prop {
     api_name: "vendor.os_test-long"
     type: Long
-    scope: System
+    scope: Public
     access: ReadWrite
 }
 
@@ -88,7 +88,7 @@ prop {
 prop {
     api_name: "test.strlist"
     type: StringList
-    scope: System
+    scope: Public
     access: ReadWrite
 }
 
@@ -107,8 +107,8 @@ constexpr const char* kExpectedJavaOutput =
 package com.somecompany;
 
 import android.annotation.SystemApi;
-
 import android.os.SystemProperties;
+
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -116,6 +116,8 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+/** @hide */
+@SystemApi
 public final class TestProperties {
     private TestProperties () {}
 
@@ -233,8 +235,6 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_int", value == null ? "" : value.toString());
     }
 
-    /** @hide */
-    @SystemApi
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
         return Optional.ofNullable(tryParseString(value));
@@ -284,8 +284,6 @@ public final class TestProperties {
         SystemProperties.set("ro.vendor.test.b", value == null ? "" : value.toString());
     }
 
-    /** @hide */
-    @SystemApi
     public static Optional<Long> vendor_os_test_long() {
         String value = SystemProperties.get("vendor.vendor.os_test-long");
         return Optional.ofNullable(tryParseLong(value));
@@ -317,8 +315,6 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
-    /** @hide */
-    @SystemApi
     public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test.strlist");
         return tryParseList(v -> tryParseString(v), value);

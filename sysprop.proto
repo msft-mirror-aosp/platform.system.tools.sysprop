@@ -32,7 +32,7 @@ enum Owner {
 
 enum Scope {
   Public = 0;
-  System = 1;
+  System = 1 [deprecated=true];
   Internal = 2;
 }
 
@@ -60,6 +60,7 @@ message Property {
   string prop_name = 5;
   string enum_values = 6;
   bool integer_as_bool = 7;
+  bool deprecated = 8;
 }
 
 message Properties {
