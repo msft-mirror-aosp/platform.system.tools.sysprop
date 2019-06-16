@@ -34,6 +34,7 @@
 #include <vector>
 
 #include <android-base/file.h>
+#include <android-base/logging.h>
 #include <android-base/strings.h>
 #include <google/protobuf/text_format.h>
 
@@ -317,6 +318,12 @@ bool ParseProps(const std::string& input_file_path, sysprop::Properties* props,
     sysprop::Property& prop = *props->mutable_prop(i);
     if (prop.prop_name().empty())
       prop.set_prop_name(GenerateDefaultPropName(*props, prop));
+    if (prop.scope() == sysprop::Scope::System) {
+      LOG(WARNING) << "Sysprop API " << prop.api_name()
+                   << ": System scope is deprecated."
+                   << " Please use Public scope instead.";
+      prop.set_scope(sysprop::Scope::Public);
+    }
   }
 
   return true;

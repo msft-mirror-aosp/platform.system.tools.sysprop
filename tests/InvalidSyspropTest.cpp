@@ -57,7 +57,7 @@ module: "odm.invalid.prop.name"
 prop {
     api_name: "!@#$"
     type: Integer
-    scope: System
+    scope: Public
     access: ReadWrite
 }
 )";
@@ -106,7 +106,7 @@ module: "android.PlatformProperties"
 prop {
     api_name: "vendor.build.utc_long"
     type: Long
-    scope: System
+    scope: Public
     access: ReadWrite
 }
 )";
@@ -118,7 +118,7 @@ module: "com.android.VendorProp"
 prop {
     api_name: "i_am_readwrite"
     type: Long
-    scope: System
+    scope: Public
     prop_name: "ro.vendor.i_am_readwrite"
     access: ReadWrite
 }
@@ -150,7 +150,7 @@ module: "com.android.OdmProp"
 prop {
     api_name: "i.am.readonly"
     type: Long
-    scope: System
+    scope: Public
     prop_name: "odm.i_am_readwrite"
     access: Readonly
 }

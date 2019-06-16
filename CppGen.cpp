@@ -253,7 +253,7 @@ std::string GenerateHeader(const sysprop::Properties& props,
   for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
 
-    // Scope: Internal > System > Public
+    // Scope: Internal > Public
     if (prop.scope() > scope) continue;
 
     if (!first) {
@@ -420,7 +420,7 @@ std::string GenerateSource(const sysprop::Properties& props,
 
 bool GenerateCppFiles(const std::string& input_file_path,
                       const std::string& header_dir,
-                      const std::string& system_header_dir,
+                      const std::string& public_header_dir,
                       const std::string& source_output_dir,
                       const std::string& include_name, std::string* err) {
   sysprop::Properties props;
@@ -433,7 +433,7 @@ bool GenerateCppFiles(const std::string& input_file_path,
 
   for (auto&& [scope, dir] : {
            std::pair(sysprop::Internal, header_dir),
-           std::pair(sysprop::System, system_header_dir),
+           std::pair(sysprop::Public, public_header_dir),
        }) {
     if (!IsDirectory(dir) && !CreateDirectories(dir)) {
       *err = "Creating directory to " + dir + " failed: " + strerror(errno);
