@@ -30,7 +30,7 @@ namespace {
 struct Arguments {
   std::string input_file_path;
   std::string header_dir;
-  std::string system_header_dir;
+  std::string public_header_dir;
   std::string source_dir;
   std::string include_name;
 };
@@ -38,7 +38,7 @@ struct Arguments {
 [[noreturn]] void PrintUsage(const char* exe_name) {
   std::printf(
       "Usage: %s --header-dir dir --source-dir dir "
-      "--include-name name --system-header-dir dir "
+      "--include-name name --public-header-dir dir "
       "sysprop_file\n",
       exe_name);
   std::exit(EXIT_FAILURE);
@@ -48,7 +48,7 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
   for (;;) {
     static struct option long_options[] = {
         {"header-dir", required_argument, 0, 'h'},
-        {"system-header-dir", required_argument, 0, 's'},
+        {"public-header-dir", required_argument, 0, 'p'},
         {"source-dir", required_argument, 0, 'c'},
         {"include-name", required_argument, 0, 'n'},
     };
@@ -60,8 +60,8 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
       case 'h':
         args->header_dir = optarg;
         break;
-      case 's':
-        args->system_header_dir = optarg;
+      case 'p':
+        args->public_header_dir = optarg;
         break;
       case 'c':
         args->source_dir = optarg;
@@ -84,7 +84,7 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
     return false;
   }
 
-  if (args->header_dir.empty() || args->system_header_dir.empty() ||
+  if (args->header_dir.empty() || args->public_header_dir.empty() ||
       args->source_dir.empty() || args->include_name.empty()) {
     PrintUsage(argv[0]);
   }
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (!GenerateCppFiles(args.input_file_path, args.header_dir,
-                        args.system_header_dir, args.source_dir,
+                        args.public_header_dir, args.source_dir,
                         args.include_name, &err)) {
     LOG(FATAL) << "Error during generating cpp sysprop from "
                << args.input_file_path << ": " << err;
