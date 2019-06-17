@@ -23,6 +23,7 @@
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <cerrno>
+#include <filesystem>
 #include <regex>
 #include <string>
 
@@ -435,8 +436,10 @@ bool GenerateCppFiles(const std::string& input_file_path,
            std::pair(sysprop::Internal, header_dir),
            std::pair(sysprop::Public, public_header_dir),
        }) {
-    if (!IsDirectory(dir) && !CreateDirectories(dir)) {
-      *err = "Creating directory to " + dir + " failed: " + strerror(errno);
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    if (ec) {
+      *err = "Creating directory to " + dir + " failed: " + ec.message();
       return false;
     }
 
