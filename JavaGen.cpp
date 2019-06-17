@@ -23,6 +23,7 @@
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <cerrno>
+#include <filesystem>
 #include <regex>
 #include <string>
 
@@ -426,9 +427,11 @@ bool GenerateJavaLibrary(const std::string& input_file_path,
   std::string java_package_dir =
       java_output_dir + "/" + std::regex_replace(package_name, kRegexDot, "/");
 
-  if (!IsDirectory(java_package_dir) && !CreateDirectories(java_package_dir)) {
+  std::error_code ec;
+  std::filesystem::create_directories(java_package_dir, ec);
+  if (ec) {
     *err = "Creating directory to " + java_package_dir +
-           " failed: " + strerror(errno);
+           " failed: " + ec.message();
     return false;
   }
 
