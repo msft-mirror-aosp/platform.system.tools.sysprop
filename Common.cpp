@@ -249,33 +249,6 @@ bool ValidateProps(const sysprop::Properties& props, std::string* err) {
 
 }  // namespace
 
-// For directory functions, we could use <filesystem> of C++17 if supported..
-bool CreateDirectories(const std::string& path) {
-  struct stat st;
-
-  // If already exists..
-  if (stat(path.c_str(), &st) == 0) {
-    return false;
-  }
-
-  size_t last_slash = path.rfind('/');
-  if (last_slash > 0 && last_slash != std::string::npos) {
-    std::string parent = path.substr(0, last_slash);
-    if (!IsDirectory(parent) && !CreateDirectories(parent)) return false;
-  }
-
-  // It's very unlikely, but if path contains ".." or any symbolic links, it
-  // might already be created before this line.
-  return mkdir(path.c_str(), 0755) == 0 || IsDirectory(path);
-}
-
-bool IsDirectory(const std::string& path) {
-  struct stat st;
-
-  if (stat(path.c_str(), &st) == -1) return false;
-  return S_ISDIR(st.st_mode);
-}
-
 bool IsListProp(const sysprop::Property& prop) {
   switch (prop.type()) {
     case sysprop::BooleanList:
