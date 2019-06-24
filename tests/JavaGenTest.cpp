@@ -50,7 +50,6 @@ prop {
     scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test.enum"
     type: Enum
@@ -72,7 +71,6 @@ prop {
     scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test_double_list"
     type: DoubleList
@@ -90,14 +88,15 @@ prop {
     type: StringList
     scope: Public
     access: ReadWrite
+    deprecated: true
 }
-
 prop {
     api_name: "el"
     type: EnumList
     enum_values: "enu|mva|lue"
     scope: Internal
     access: ReadWrite
+    deprecated: true
 }
 )";
 
@@ -315,12 +314,14 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
+    @Deprecated
     public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test.strlist");
         return tryParseList(v -> tryParseString(v), value);
     }
 
     /** @hide */
+    @Deprecated
     public static void test_strlist(List<String> value) {
         SystemProperties.set("vendor.test.strlist", value == null ? "" : formatList(value));
     }
@@ -340,12 +341,14 @@ public final class TestProperties {
     }
 
     /** @hide */
+    @Deprecated
     public static List<el_values> el() {
         String value = SystemProperties.get("vendor.el");
         return tryParseEnumList(el_values.class, value);
     }
 
     /** @hide */
+    @Deprecated
     public static void el(List<el_values> value) {
         SystemProperties.set("vendor.el", value == null ? "" : formatEnumList(value, el_values::getPropValue));
     }
