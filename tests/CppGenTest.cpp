@@ -29,7 +29,6 @@ namespace {
 constexpr const char* kTestSyspropFile =
     R"(owner: Platform
 module: "android.sysprop.PlatformProperties"
-
 prop {
     api_name: "test_double"
     type: Double
@@ -51,7 +50,6 @@ prop {
     scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test.enum"
     type: Enum
@@ -73,7 +71,6 @@ prop {
     scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test_double_list"
     type: DoubleList
@@ -91,14 +88,15 @@ prop {
     type: StringList
     scope: Public
     access: ReadWrite
+    deprecated: true
 }
-
 prop {
     api_name: "el"
     type: EnumList
     enum_values: "enu|mva|lue"
     scope: Internal
     access: ReadWrite
+    deprecated: true
 }
 )";
 
@@ -148,8 +146,8 @@ bool test_double_list(const std::vector<std::optional<double>>& value);
 std::vector<std::optional<std::int32_t>> test_list_int();
 bool test_list_int(const std::vector<std::optional<std::int32_t>>& value);
 
-std::vector<std::optional<std::string>> test_strlist();
-bool test_strlist(const std::vector<std::optional<std::string>>& value);
+[[deprecated]] std::vector<std::optional<std::string>> test_strlist();
+[[deprecated]] bool test_strlist(const std::vector<std::optional<std::string>>& value);
 
 enum class el_values {
     ENU,
@@ -157,8 +155,8 @@ enum class el_values {
     LUE,
 };
 
-std::vector<std::optional<el_values>> el();
-bool el(const std::vector<std::optional<el_values>>& value);
+[[deprecated]] std::vector<std::optional<el_values>> el();
+[[deprecated]] bool el(const std::vector<std::optional<el_values>>& value);
 
 }  // namespace android::sysprop::PlatformProperties
 )";
@@ -185,7 +183,7 @@ std::optional<std::int64_t> android_os_test_long();
 
 std::vector<std::optional<std::int32_t>> test_list_int();
 
-std::vector<std::optional<std::string>> test_strlist();
+[[deprecated]] std::vector<std::optional<std::string>> test_strlist();
 
 }  // namespace android::sysprop::PlatformProperties
 )";
