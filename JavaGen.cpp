@@ -362,6 +362,9 @@ bool GenerateJavaClass(const sysprop::Properties& props,
     if (prop.scope() != classScope) {
       WriteJavaAnnotation(writer, prop.scope());
     }
+    if (prop.deprecated()) {
+      writer.Write("@Deprecated\n");
+    }
 
     if (IsListProp(prop)) {
       writer.Write("public static %s %s() {\n", prop_type.c_str(),
@@ -388,6 +391,9 @@ bool GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("\n");
       if (classScope != sysprop::Internal) {
         WriteJavaAnnotation(writer, sysprop::Internal);
+      }
+      if (prop.deprecated()) {
+        writer.Write("@Deprecated\n");
       }
       writer.Write("public static void %s(%s value) {\n", prop_id.c_str(),
                    prop_type.c_str());
