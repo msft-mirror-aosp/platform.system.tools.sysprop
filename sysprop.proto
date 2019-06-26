@@ -68,3 +68,7 @@ message Properties {
   string module = 2;
   repeated Property prop = 3;
 }
+
+message SyspropLibraryApis {
+  repeated Properties props = 1;
+}
