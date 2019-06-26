@@ -187,9 +187,8 @@ TEST(SyspropTest, InvalidSyspropTest) {
 
   for (auto [test_case, expected_error] : kTestCasesAndExpectedErrors) {
     ASSERT_TRUE(android::base::WriteStringToFile(test_case, file.path));
-    std::string err;
-    sysprop::Properties props;
-    EXPECT_FALSE(ParseProps(file.path, &props, &err));
-    EXPECT_EQ(err, expected_error);
+    auto res = ParseProps(file.path);
+    EXPECT_FALSE(res);
+    EXPECT_EQ(res.error().message(), expected_error);
   }
 }

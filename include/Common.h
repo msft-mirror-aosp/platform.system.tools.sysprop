@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SYSTEM_TOOLS_SYSPROP_COMMON_H_
-#define SYSTEM_TOOLS_SYSPROP_COMMON_H_
+#pragma once
 
+#include <android-base/result.h>
 #include <string>
 #include "sysprop.pb.h"
 
@@ -26,8 +26,6 @@ inline static constexpr const char* kGeneratedFileFooterComments =
 std::string ApiNameToIdentifier(const std::string& name);
 std::string GetModuleName(const sysprop::Properties& props);
 bool IsListProp(const sysprop::Property& prop);
-bool ParseProps(const std::string& file_path, sysprop::Properties* props,
-                std::string* err);
+android::base::Result<sysprop::Properties> ParseProps(
+    const std::string& file_path);
 std::string ToUpper(std::string str);
-
-#endif  // SYSTEM_TOOLS_SYSPROP_COMMON_H_
