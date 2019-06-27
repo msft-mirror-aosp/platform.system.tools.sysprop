@@ -227,6 +227,21 @@ Result<void> ValidateProps(const sysprop::Properties& props) {
   return {};
 }
 
+void SetDefaultValues(sysprop::Properties* props) {
+  for (int i = 0; i < props->prop_size(); ++i) {
+    // set each optional field to its default value
+    sysprop::Property& prop = *props->mutable_prop(i);
+    if (prop.prop_name().empty())
+      prop.set_prop_name(GenerateDefaultPropName(*props, prop));
+    if (prop.scope() == sysprop::Scope::System) {
+      LOG(WARNING) << "Sysprop API " << prop.api_name()
+                   << ": System scope is deprecated."
+                   << " Please use Public scope instead.";
+      prop.set_scope(sysprop::Scope::Public);
+    }
+  }
+}
+
 }  // namespace
 
 bool IsListProp(const sysprop::Property& prop) {
@@ -264,17 +279,39 @@ Result<sysprop::Properties> ParseProps(const std::string& input_file_path) {
     return res.error();
   }
 
-  for (int i = 0; i < ret.prop_size(); ++i) {
-    // set each optional field to its default value
-    sysprop::Property& prop = *ret.mutable_prop(i);
-    if (prop.prop_name().empty())
-      prop.set_prop_name(GenerateDefaultPropName(ret, prop));
-    if (prop.scope() == sysprop::Scope::System) {
-      LOG(WARNING) << "Sysprop API " << prop.api_name()
-                   << ": System scope is deprecated."
-                   << " Please use Public scope instead.";
-      prop.set_scope(sysprop::Scope::Public);
+  SetDefaultValues(&ret);
+
+  return ret;
+}
+
+Result<sysprop::SyspropLibraryApis> ParseApiFile(
+    const std::string& input_file_path) {
+  sysprop::SyspropLibraryApis ret;
+  std::string file_contents;
+
+  if (!android::base::ReadFileToString(input_file_path, &file_contents, true)) {
+    return ErrnoErrorf("Error reading file {}", input_file_path);
+  }
+
+  if (!google::protobuf::TextFormat::ParseFromString(file_contents, &ret)) {
+    return Errorf("Error parsing file {}", input_file_path);
+  }
+
+  std::unordered_set<std::string> modules;
+
+  for (int i = 0; i < ret.props_size(); ++i) {
+    sysprop::Properties* props = ret.mutable_props(i);
+
+    if (!modules.insert(props->module()).second) {
+      return Errorf("Error parsing file {}: duplicated module {}",
+                    input_file_path, props->module());
     }
+
+    if (auto res = ValidateProps(*props); !res) {
+      return res.error();
+    }
+
+    SetDefaultValues(props);
   }
 
   return ret;
