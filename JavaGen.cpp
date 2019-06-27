@@ -31,6 +31,10 @@
 #include "Common.h"
 #include "sysprop.pb.h"
 
+using android::base::ErrnoErrorf;
+using android::base::Errorf;
+using android::base::Result;
+
 namespace {
 
 constexpr const char* kIndent = "    ";
@@ -153,8 +157,7 @@ std::string GetJavaClassName(const sysprop::Properties& props);
 std::string GetParsingExpression(const sysprop::Property& prop);
 std::string GetFormattingExpression(const sysprop::Property& prop);
 void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope);
-bool GenerateJavaClass(const sysprop::Properties& props,
-                       std::string* java_result, std::string* err);
+std::string GenerateJavaClass(const sysprop::Properties& props);
 
 std::string GetJavaEnumTypeName(const sysprop::Property& prop) {
   return ApiNameToIdentifier(prop.api_name()) + "_values";
@@ -290,9 +293,7 @@ void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
   }
 }
 
-bool GenerateJavaClass(const sysprop::Properties& props,
-                       std::string* java_result,
-                       [[maybe_unused]] std::string* err) {
+std::string GenerateJavaClass(const sysprop::Properties& props) {
   sysprop::Scope classScope = sysprop::Internal;
 
   for (int i = 0; i < props.prop_size(); ++i) {
@@ -409,26 +410,22 @@ bool GenerateJavaClass(const sysprop::Properties& props,
   writer.Dedent();
   writer.Write("}\n");
 
-  *java_result = writer.Code();
-  return true;
+  return writer.Code();
 }
 
 }  // namespace
 
-bool GenerateJavaLibrary(const std::string& input_file_path,
-                         const std::string& java_output_dir, std::string* err) {
+Result<void> GenerateJavaLibrary(const std::string& input_file_path,
+                                 const std::string& java_output_dir) {
   sysprop::Properties props;
 
-  if (!ParseProps(input_file_path, &props, err)) {
-    return false;
+  if (auto res = ParseProps(input_file_path); res) {
+    props = std::move(*res);
+  } else {
+    return res.error();
   }
 
-  std::string java_result;
-
-  if (!GenerateJavaClass(props, &java_result, err)) {
-    return false;
-  }
-
+  std::string java_result = GenerateJavaClass(props);
   std::string package_name = GetJavaPackageName(props);
   std::string java_package_dir =
       java_output_dir + "/" + std::regex_replace(package_name, kRegexDot, "/");
@@ -436,18 +433,16 @@ bool GenerateJavaLibrary(const std::string& input_file_path,
   std::error_code ec;
   std::filesystem::create_directories(java_package_dir, ec);
   if (ec) {
-    *err = "Creating directory to " + java_package_dir +
-           " failed: " + ec.message();
-    return false;
+    return Errorf("Creating directory to {} failed: {}", java_package_dir,
+                  ec.message());
   }
 
   std::string class_name = GetJavaClassName(props);
   std::string java_output_file = java_package_dir + "/" + class_name + ".java";
   if (!android::base::WriteStringToFile(java_result, java_output_file)) {
-    *err = "Writing generated java class to " + java_output_file +
-           " failed: " + strerror(errno);
-    return false;
+    return ErrnoErrorf("Writing generated java class to {} failed",
+                       java_output_file);
   }
 
-  return true;
+  return {};
 }

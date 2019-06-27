@@ -370,9 +370,7 @@ TEST(SyspropTest, JavaGenTest) {
 
   TemporaryDir temp_dir;
 
-  std::string err;
-  ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, temp_dir.path, &err));
-  ASSERT_TRUE(err.empty());
+  ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, temp_dir.path));
 
   std::string java_output_path =
       temp_dir.path + "/com/somecompany/TestProperties.java"s;
