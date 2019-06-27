@@ -37,10 +37,17 @@ cc_binary_host {
     srcs: ["JavaGen.cpp", "JavaMain.cpp"],
 }
 
+cc_binary_host {
+    name: "sysprop_api_checker",
+    defaults: ["sysprop-defaults"],
+    srcs: ["ApiChecker.cpp", "ApiCheckerMain.cpp"],
+}
+
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
-    srcs: ["CppGen.cpp",
+    srcs: ["ApiChecker.cpp",
+            "CppGen.cpp",
            "JavaGen.cpp",
            "tests/*.cpp"],
 }
