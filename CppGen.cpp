@@ -31,6 +31,10 @@
 #include "Common.h"
 #include "sysprop.pb.h"
 
+using android::base::ErrnoErrorf;
+using android::base::Errorf;
+using android::base::Result;
+
 namespace {
 
 constexpr const char* kIndent = "    ";
@@ -421,15 +425,17 @@ std::string GenerateSource(const sysprop::Properties& props,
 
 }  // namespace
 
-bool GenerateCppFiles(const std::string& input_file_path,
-                      const std::string& header_dir,
-                      const std::string& public_header_dir,
-                      const std::string& source_output_dir,
-                      const std::string& include_name, std::string* err) {
+Result<void> GenerateCppFiles(const std::string& input_file_path,
+                              const std::string& header_dir,
+                              const std::string& public_header_dir,
+                              const std::string& source_output_dir,
+                              const std::string& include_name) {
   sysprop::Properties props;
 
-  if (!ParseProps(input_file_path, &props, err)) {
-    return false;
+  if (auto res = ParseProps(input_file_path); res) {
+    props = std::move(*res);
+  } else {
+    return res.error();
   }
 
   std::string output_basename = android::base::Basename(input_file_path);
@@ -441,17 +447,14 @@ bool GenerateCppFiles(const std::string& input_file_path,
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
     if (ec) {
-      *err = "Creating directory to " + dir + " failed: " + ec.message();
-      return false;
+      return Errorf("Creating directory to {} failed: {}", dir, ec.message());
     }
 
     std::string path = dir + "/" + output_basename + ".h";
     std::string result = GenerateHeader(props, scope);
 
     if (!android::base::WriteStringToFile(result, path)) {
-      *err =
-          "Writing generated header to " + path + " failed: " + strerror(errno);
-      return false;
+      return ErrnoErrorf("Writing generated header to {} failed", path);
     }
   }
 
@@ -459,10 +462,8 @@ bool GenerateCppFiles(const std::string& input_file_path,
   std::string source_result = GenerateSource(props, include_name);
 
   if (!android::base::WriteStringToFile(source_result, source_path)) {
-    *err = "Writing generated source to " + source_path +
-           " failed: " + strerror(errno);
-    return false;
+    return ErrnoErrorf("Writing generated source to {} failed", source_path);
   }
 
-  return true;
+  return {};
 }
