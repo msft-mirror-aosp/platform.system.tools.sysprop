@@ -495,11 +495,9 @@ TEST(SyspropTest, CppGenTest) {
   auto sysprop_deleter = android::base::make_scope_guard(
       [&] { unlink(temp_sysprop_path.c_str()); });
 
-  std::string err;
-  ASSERT_TRUE(GenerateCppFiles(
-      temp_sysprop_path, temp_dir.path, temp_dir.path + "/public"s,
-      temp_dir.path, "properties/PlatformProperties.sysprop.h", &err));
-  ASSERT_TRUE(err.empty());
+  ASSERT_TRUE(GenerateCppFiles(temp_sysprop_path, temp_dir.path,
+                               temp_dir.path + "/public"s, temp_dir.path,
+                               "properties/PlatformProperties.sysprop.h"));
 
   std::string header_output_path =
       temp_dir.path + "/PlatformProperties.sysprop.h"s;
