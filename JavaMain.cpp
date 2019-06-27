@@ -17,6 +17,7 @@
 #define LOG_TAG "sysprop_java"
 
 #include <android-base/logging.h>
+#include <android-base/result.h>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -24,6 +25,9 @@
 #include <getopt.h>
 
 #include "JavaGen.h"
+
+using android::base::Errorf;
+using android::base::Result;
 
 namespace {
 
@@ -37,7 +41,7 @@ struct Arguments {
   std::exit(EXIT_FAILURE);
 }
 
-bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
+Result<void> ParseArgs(int argc, char* argv[], Arguments* args) {
   for (;;) {
     static struct option long_options[] = {
         {"java-output-dir", required_argument, 0, 'j'},
@@ -56,19 +60,17 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
   }
 
   if (optind >= argc) {
-    *err = "No input file specified";
-    return false;
+    return Errorf("No input file specified");
   }
 
   if (optind + 1 < argc) {
-    *err = "More than one input file";
-    return false;
+    return Errorf("More than one input file");
   }
 
   args->input_file_path = argv[optind];
   if (args->java_output_dir.empty()) args->java_output_dir = ".";
 
-  return true;
+  return {};
 }
 
 }  // namespace
@@ -76,13 +78,14 @@ bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
 int main(int argc, char* argv[]) {
   Arguments args;
   std::string err;
-  if (!ParseArgs(argc, argv, &args, &err)) {
-    std::fprintf(stderr, "%s: %s\n", argv[0], err.c_str());
+  if (auto res = ParseArgs(argc, argv, &args); !res) {
+    LOG(ERROR) << res.error();
     PrintUsage(argv[0]);
   }
 
-  if (!GenerateJavaLibrary(args.input_file_path, args.java_output_dir, &err)) {
+  if (auto res = GenerateJavaLibrary(args.input_file_path, args.java_output_dir);
+      !res) {
     LOG(FATAL) << "Error during generating java sysprop from "
-               << args.input_file_path << ": " << err;
+               << args.input_file_path << ": " << res.error();
   }
 }
