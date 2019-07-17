@@ -47,10 +47,9 @@ prop {
     api_name: "test.string"
     type: String
     prop_name: "vendor.test.string"
-    scope: System
+    scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test.enum"
     type: Enum
@@ -69,10 +68,9 @@ prop {
 prop {
     api_name: "vendor.os_test-long"
     type: Long
-    scope: System
+    scope: Public
     access: ReadWrite
 }
-
 prop {
     api_name: "test_double_list"
     type: DoubleList
@@ -88,16 +86,17 @@ prop {
 prop {
     api_name: "test.strlist"
     type: StringList
-    scope: System
+    scope: Public
     access: ReadWrite
+    deprecated: true
 }
-
 prop {
     api_name: "el"
     type: EnumList
     enum_values: "enu|mva|lue"
     scope: Internal
     access: ReadWrite
+    deprecated: true
 }
 )";
 
@@ -107,8 +106,8 @@ constexpr const char* kExpectedJavaOutput =
 package com.somecompany;
 
 import android.annotation.SystemApi;
-
 import android.os.SystemProperties;
+
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -116,6 +115,8 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+/** @hide */
+@SystemApi
 public final class TestProperties {
     private TestProperties () {}
 
@@ -233,8 +234,6 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_int", value == null ? "" : value.toString());
     }
 
-    /** @hide */
-    @SystemApi
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
         return Optional.ofNullable(tryParseString(value));
@@ -284,8 +283,6 @@ public final class TestProperties {
         SystemProperties.set("ro.vendor.test.b", value == null ? "" : value.toString());
     }
 
-    /** @hide */
-    @SystemApi
     public static Optional<Long> vendor_os_test_long() {
         String value = SystemProperties.get("vendor.vendor.os_test-long");
         return Optional.ofNullable(tryParseLong(value));
@@ -317,14 +314,14 @@ public final class TestProperties {
         SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
     }
 
-    /** @hide */
-    @SystemApi
+    @Deprecated
     public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test.strlist");
         return tryParseList(v -> tryParseString(v), value);
     }
 
     /** @hide */
+    @Deprecated
     public static void test_strlist(List<String> value) {
         SystemProperties.set("vendor.test.strlist", value == null ? "" : formatList(value));
     }
@@ -344,12 +341,14 @@ public final class TestProperties {
     }
 
     /** @hide */
+    @Deprecated
     public static List<el_values> el() {
         String value = SystemProperties.get("vendor.el");
         return tryParseEnumList(el_values.class, value);
     }
 
     /** @hide */
+    @Deprecated
     public static void el(List<el_values> value) {
         SystemProperties.set("vendor.el", value == null ? "" : formatEnumList(value, el_values::getPropValue));
     }
@@ -371,9 +370,7 @@ TEST(SyspropTest, JavaGenTest) {
 
   TemporaryDir temp_dir;
 
-  std::string err;
-  ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, temp_dir.path, &err));
-  ASSERT_TRUE(err.empty());
+  ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, temp_dir.path));
 
   std::string java_output_path =
       temp_dir.path + "/com/somecompany/TestProperties.java"s;
