@@ -111,6 +111,7 @@ import android.os.SystemProperties;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -121,7 +122,7 @@ public final class TestProperties {
     private TestProperties () {}
 
     private static Boolean tryParseBoolean(String str) {
-        switch (str.toLowerCase()) {
+        switch (str.toLowerCase(Locale.US)) {
             case "1":
             case "true":
                 return Boolean.TRUE;
@@ -163,7 +164,7 @@ public final class TestProperties {
 
     private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
         try {
-            return Enum.valueOf(enumType, str.toUpperCase());
+            return Enum.valueOf(enumType, str.toUpperCase(Locale.US));
         } catch (IllegalArgumentException e) {
             return null;
         }
