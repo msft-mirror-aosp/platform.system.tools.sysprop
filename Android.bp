@@ -43,6 +43,12 @@ cc_binary_host {
     srcs: ["ApiChecker.cpp", "ApiCheckerMain.cpp"],
 }
 
+cc_binary_host {
+    name: "sysprop_api_dump",
+    defaults: ["sysprop-defaults"],
+    srcs: ["ApiDumpMain.cpp"],
+}
+
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
