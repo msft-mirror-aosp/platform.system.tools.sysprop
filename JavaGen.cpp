@@ -40,8 +40,7 @@ namespace {
 constexpr const char* kIndent = "    ";
 
 constexpr const char* kJavaFileImports =
-    R"(import android.annotation.SystemApi;
-import android.os.SystemProperties;
+    R"(import android.os.SystemProperties;
 
 import java.util.ArrayList;
 import java.util.function.Function;
@@ -157,8 +156,8 @@ std::string GetJavaPackageName(const sysprop::Properties& props);
 std::string GetJavaClassName(const sysprop::Properties& props);
 std::string GetParsingExpression(const sysprop::Property& prop);
 std::string GetFormattingExpression(const sysprop::Property& prop);
-void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope);
-std::string GenerateJavaClass(const sysprop::Properties& props);
+std::string GenerateJavaClass(const sysprop::Properties& props,
+                              sysprop::Scope scope);
 
 std::string GetJavaEnumTypeName(const sysprop::Property& prop) {
   return ApiNameToIdentifier(prop.api_name()) + "_values";
@@ -277,33 +276,8 @@ std::string GetJavaClassName(const sysprop::Properties& props) {
   return module.substr(module.rfind('.') + 1);
 }
 
-void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
-  switch (scope) {
-    // This is to restrict access from modules linking against SDK.
-    // TODO(b/131637873): remove this after cutting dependency on
-    // java_sdk_library
-    case sysprop::Public:
-      writer.Write("/** @hide */\n");
-      writer.Write("@SystemApi\n");
-      break;
-    case sysprop::Internal:
-      writer.Write("/** @hide */\n");
-      break;
-    default:
-      break;
-  }
-}
-
-std::string GenerateJavaClass(const sysprop::Properties& props) {
-  sysprop::Scope classScope = sysprop::Internal;
-
-  for (int i = 0; i < props.prop_size(); ++i) {
-    // Get least restrictive scope among props. For example, if all props
-    // are internal, class can be as well internal. However, class should
-    // be public or system if at least one prop is so.
-    classScope = std::min(classScope, props.prop(i).scope());
-  }
-
+std::string GenerateJavaClass(const sysprop::Properties& props,
+                              sysprop::Scope scope) {
   std::string package_name = GetJavaPackageName(props);
   std::string class_name = GetJavaClassName(props);
 
@@ -311,24 +285,23 @@ std::string GenerateJavaClass(const sysprop::Properties& props) {
   writer.Write("%s", kGeneratedFileFooterComments);
   writer.Write("package %s;\n\n", package_name.c_str());
   writer.Write("%s", kJavaFileImports);
-  WriteJavaAnnotation(writer, classScope);
   writer.Write("public final class %s {\n", class_name.c_str());
   writer.Indent();
   writer.Write("private %s () {}\n\n", class_name.c_str());
   writer.Write("%s", kJavaParsersAndFormatters);
 
   for (int i = 0; i < props.prop_size(); ++i) {
-    writer.Write("\n");
-
     const sysprop::Property& prop = props.prop(i);
+
+    // skip if scope is internal and we are generating public class
+    if (prop.scope() > scope) continue;
+
+    writer.Write("\n");
 
     std::string prop_id = ApiNameToIdentifier(prop.api_name()).c_str();
     std::string prop_type = GetJavaTypeName(prop);
 
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
-      if (prop.scope() != classScope) {
-        WriteJavaAnnotation(writer, prop.scope());
-      }
       writer.Write("public static enum %s {\n",
                    GetJavaEnumTypeName(prop).c_str());
       writer.Indent();
@@ -361,9 +334,6 @@ std::string GenerateJavaClass(const sysprop::Properties& props) {
       writer.Write("}\n\n");
     }
 
-    if (prop.scope() != classScope) {
-      WriteJavaAnnotation(writer, prop.scope());
-    }
     if (prop.deprecated()) {
       writer.Write("@Deprecated\n");
     }
@@ -389,11 +359,8 @@ std::string GenerateJavaClass(const sysprop::Properties& props) {
       writer.Write("}\n");
     }
 
-    if (prop.access() != sysprop::Readonly) {
+    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
       writer.Write("\n");
-      if (classScope != sysprop::Internal) {
-        WriteJavaAnnotation(writer, sysprop::Internal);
-      }
       if (prop.deprecated()) {
         writer.Write("@Deprecated\n");
       }
@@ -417,6 +384,7 @@ std::string GenerateJavaClass(const sysprop::Properties& props) {
 }  // namespace
 
 Result<void> GenerateJavaLibrary(const std::string& input_file_path,
+                                 sysprop::Scope scope,
                                  const std::string& java_output_dir) {
   sysprop::Properties props;
 
@@ -426,7 +394,7 @@ Result<void> GenerateJavaLibrary(const std::string& input_file_path,
     return res.error();
   }
 
-  std::string java_result = GenerateJavaClass(props);
+  std::string java_result = GenerateJavaClass(props, scope);
   std::string package_name = GetJavaPackageName(props);
   std::string java_package_dir =
       java_output_dir + "/" + std::regex_replace(package_name, kRegexDot, "/");
