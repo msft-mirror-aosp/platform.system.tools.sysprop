@@ -18,6 +18,7 @@ cc_defaults {
     name: "sysprop-defaults",
     srcs: ["sysprop.proto", "Common.cpp", "CodeWriter.cpp"],
     shared_libs: ["libbase", "liblog"],
+    static_libs: ["libc++fs"],
     proto: {
         type: "full",
     },
@@ -36,10 +37,23 @@ cc_binary_host {
     srcs: ["JavaGen.cpp", "JavaMain.cpp"],
 }
 
+cc_binary_host {
+    name: "sysprop_api_checker",
+    defaults: ["sysprop-defaults"],
+    srcs: ["ApiChecker.cpp", "ApiCheckerMain.cpp"],
+}
+
+cc_binary_host {
+    name: "sysprop_api_dump",
+    defaults: ["sysprop-defaults"],
+    srcs: ["ApiDumpMain.cpp"],
+}
+
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
-    srcs: ["CppGen.cpp",
+    srcs: ["ApiChecker.cpp",
+            "CppGen.cpp",
            "JavaGen.cpp",
            "tests/*.cpp"],
 }

@@ -23,12 +23,17 @@
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <cerrno>
+#include <filesystem>
 #include <regex>
 #include <string>
 
 #include "CodeWriter.h"
 #include "Common.h"
 #include "sysprop.pb.h"
+
+using android::base::ErrnoErrorf;
+using android::base::Errorf;
+using android::base::Result;
 
 namespace {
 
@@ -253,7 +258,7 @@ std::string GenerateHeader(const sysprop::Properties& props,
   for (int i = 0; i < props.prop_size(); ++i) {
     const sysprop::Property& prop = props.prop(i);
 
-    // Scope: Internal > System > Public
+    // Scope: Internal > Public
     if (prop.scope() > scope) continue;
 
     if (!first) {
@@ -276,8 +281,10 @@ std::string GenerateHeader(const sysprop::Properties& props,
       writer.Write("};\n\n");
     }
 
+    if (prop.deprecated()) writer.Write("[[deprecated]] ");
     writer.Write("%s %s();\n", prop_type.c_str(), prop_id.c_str());
     if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
+      if (prop.deprecated()) writer.Write("[[deprecated]] ");
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
     }
@@ -418,35 +425,36 @@ std::string GenerateSource(const sysprop::Properties& props,
 
 }  // namespace
 
-bool GenerateCppFiles(const std::string& input_file_path,
-                      const std::string& header_dir,
-                      const std::string& system_header_dir,
-                      const std::string& source_output_dir,
-                      const std::string& include_name, std::string* err) {
+Result<void> GenerateCppFiles(const std::string& input_file_path,
+                              const std::string& header_dir,
+                              const std::string& public_header_dir,
+                              const std::string& source_output_dir,
+                              const std::string& include_name) {
   sysprop::Properties props;
 
-  if (!ParseProps(input_file_path, &props, err)) {
-    return false;
+  if (auto res = ParseProps(input_file_path); res) {
+    props = std::move(*res);
+  } else {
+    return res.error();
   }
 
   std::string output_basename = android::base::Basename(input_file_path);
 
   for (auto&& [scope, dir] : {
            std::pair(sysprop::Internal, header_dir),
-           std::pair(sysprop::System, system_header_dir),
+           std::pair(sysprop::Public, public_header_dir),
        }) {
-    if (!IsDirectory(dir) && !CreateDirectories(dir)) {
-      *err = "Creating directory to " + dir + " failed: " + strerror(errno);
-      return false;
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    if (ec) {
+      return Errorf("Creating directory to {} failed: {}", dir, ec.message());
     }
 
     std::string path = dir + "/" + output_basename + ".h";
     std::string result = GenerateHeader(props, scope);
 
     if (!android::base::WriteStringToFile(result, path)) {
-      *err =
-          "Writing generated header to " + path + " failed: " + strerror(errno);
-      return false;
+      return ErrnoErrorf("Writing generated header to {} failed", path);
     }
   }
 
@@ -454,10 +462,8 @@ bool GenerateCppFiles(const std::string& input_file_path,
   std::string source_result = GenerateSource(props, include_name);
 
   if (!android::base::WriteStringToFile(source_result, source_path)) {
-    *err = "Writing generated source to " + source_path +
-           " failed: " + strerror(errno);
-    return false;
+    return ErrnoErrorf("Writing generated source to {} failed", source_path);
   }
 
-  return true;
+  return {};
 }
