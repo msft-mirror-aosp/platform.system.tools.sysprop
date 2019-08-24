@@ -25,6 +25,7 @@
 #include <getopt.h>
 
 #include "JavaGen.h"
+#include "sysprop.pb.h"
 
 using android::base::Errorf;
 using android::base::Result;
@@ -34,10 +35,14 @@ namespace {
 struct Arguments {
   std::string input_file_path;
   std::string java_output_dir;
+  sysprop::Scope scope;
 };
 
 [[noreturn]] void PrintUsage(const char* exe_name) {
-  std::printf("Usage: %s [--java-output-dir dir] sysprop_file\n", exe_name);
+  std::printf(
+      "Usage: %s --scope (internal|public) --java-output-dir dir "
+      "sysprop_file\n",
+      exe_name);
   std::exit(EXIT_FAILURE);
 }
 
@@ -45,6 +50,7 @@ Result<void> ParseArgs(int argc, char* argv[], Arguments* args) {
   for (;;) {
     static struct option long_options[] = {
         {"java-output-dir", required_argument, 0, 'j'},
+        {"scope", required_argument, 0, 's'},
     };
 
     int opt = getopt_long_only(argc, argv, "", long_options, nullptr);
@@ -53,6 +59,15 @@ Result<void> ParseArgs(int argc, char* argv[], Arguments* args) {
     switch (opt) {
       case 'j':
         args->java_output_dir = optarg;
+        break;
+      case 's':
+        if (strcmp(optarg, "public") == 0) {
+          args->scope = sysprop::Scope::Public;
+        } else if (strcmp(optarg, "internal") == 0) {
+          args->scope = sysprop::Scope::Internal;
+        } else {
+          return Errorf("Invalid option {} for scope", optarg);
+        }
         break;
       default:
         PrintUsage(argv[0]);
@@ -83,7 +98,8 @@ int main(int argc, char* argv[]) {
     PrintUsage(argv[0]);
   }
 
-  if (auto res = GenerateJavaLibrary(args.input_file_path, args.java_output_dir);
+  if (auto res = GenerateJavaLibrary(args.input_file_path, args.scope,
+                                     args.java_output_dir);
       !res) {
     LOG(FATAL) << "Error during generating java sysprop from "
                << args.input_file_path << ": " << res.error();
