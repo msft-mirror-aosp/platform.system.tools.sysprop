@@ -84,19 +84,32 @@ bool IsCorrectIdentifier(const std::string& name) {
   });
 }
 
-bool IsCorrectPropertyOrApiName(const std::string& name) {
+bool IsCorrectName(const std::string& name,
+                   const std::unordered_set<char>& allowed_chars) {
   if (name.empty()) return false;
+  if (!std::isalpha(*name.begin())) return false;
 
-  static std::unordered_set<char> allowed{'_', '-', '.'};
-
-  return std::all_of(name.begin(), name.end(), [](char ch) {
-    return std::isalnum(ch) != 0 || allowed.count(ch) != 0;
+  return std::all_of(name.begin(), name.end(), [allowed_chars](char ch) {
+    return std::isalnum(ch) != 0 || allowed_chars.count(ch) != 0;
   });
+}
+
+bool IsCorrectPropertyName(const std::string& name) {
+  std::unordered_set<char> allowed{'_', '-', '.'};
+  if (android::base::StartsWith(name, "ctl.")) {
+    allowed.emplace('$');
+  }
+  return IsCorrectName(name, allowed);
+}
+
+bool IsCorrectApiName(const std::string& name) {
+  static std::unordered_set<char> allowed{'_', '-'};
+  return IsCorrectName(name, allowed);
 }
 
 Result<void> ValidateProp(const sysprop::Properties& props,
                           const sysprop::Property& prop) {
-  if (!IsCorrectPropertyOrApiName(prop.api_name())) {
+  if (!IsCorrectApiName(prop.api_name())) {
     return Errorf("Invalid API name \"{}\"", prop.api_name());
   }
 
@@ -126,7 +139,7 @@ Result<void> ValidateProp(const sysprop::Properties& props,
   std::string prop_name = prop.prop_name();
   if (prop_name.empty()) prop_name = GenerateDefaultPropName(props, prop);
 
-  if (!IsCorrectPropertyOrApiName(prop_name)) {
+  if (!IsCorrectPropertyName(prop_name)) {
     return Errorf("Invalid prop name \"{}\"", prop.prop_name());
   }
 
