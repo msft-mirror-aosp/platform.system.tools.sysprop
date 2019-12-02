@@ -44,14 +44,14 @@ prop {
     access: ReadWrite
 }
 prop {
-    api_name: "test.string"
+    api_name: "test_string"
     type: String
     prop_name: "android.test.string"
     scope: Public
     access: ReadWrite
 }
 prop {
-    api_name: "test.enum"
+    api_name: "test_enum"
     type: Enum
     prop_name: "android.test.enum"
     enum_values: "a|b|c|D|e|f|G"
@@ -66,7 +66,7 @@ prop {
     access: Writeonce
 }
 prop {
-    api_name: "android.os_test-long"
+    api_name: "android_os_test-long"
     type: Long
     scope: Public
     access: ReadWrite
@@ -84,7 +84,7 @@ prop {
     access: ReadWrite
 }
 prop {
-    api_name: "test.strlist"
+    api_name: "test_strlist"
     type: StringList
     scope: Public
     access: ReadWrite
@@ -439,11 +439,11 @@ bool test_BOOLeaN(const std::optional<bool>& value) {
 }
 
 std::optional<std::int64_t> android_os_test_long() {
-    return GetProp<std::optional<std::int64_t>>("android.os_test-long");
+    return GetProp<std::optional<std::int64_t>>("android_os_test-long");
 }
 
 bool android_os_test_long(const std::optional<std::int64_t>& value) {
-    return __system_property_set("android.os_test-long", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android_os_test-long", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<double>> test_double_list() {
@@ -463,11 +463,11 @@ bool test_list_int(const std::vector<std::optional<std::int32_t>>& value) {
 }
 
 std::vector<std::optional<std::string>> test_strlist() {
-    return GetProp<std::vector<std::optional<std::string>>>("test.strlist");
+    return GetProp<std::vector<std::optional<std::string>>>("test_strlist");
 }
 
 bool test_strlist(const std::vector<std::optional<std::string>>& value) {
-    return __system_property_set("test.strlist", FormatValue(value).c_str()) == 0;
+    return __system_property_set("test_strlist", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<el_values>> el() {
