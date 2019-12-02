@@ -60,7 +60,7 @@ props {
         type: Boolean
         scope: Public
         access: ReadWrite
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
     }
 }
 )";
@@ -89,7 +89,7 @@ props {
         type: Boolean
         scope: Public
         access: ReadWrite
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
     }
 }
 )";
@@ -112,7 +112,7 @@ props {
         scope: Internal
         access: Readonly
         integer_as_bool: true,
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
     }
 }
 )";
