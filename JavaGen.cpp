@@ -359,7 +359,7 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("}\n");
     }
 
-    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
+    if (prop.access() != sysprop::Readonly) {
       writer.Write("\n");
       if (prop.deprecated()) {
         writer.Write("@Deprecated\n");

@@ -216,9 +216,17 @@ public final class TestProperties {
         return Optional.ofNullable(tryParseInteger(value));
     }
 
+    public static void test_int(Integer value) {
+        SystemProperties.set("vendor.test_int", value == null ? "" : value.toString());
+    }
+
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
         return Optional.ofNullable(tryParseString(value));
+    }
+
+    public static void test_string(String value) {
+        SystemProperties.set("vendor.test.string", value == null ? "" : value.toString());
     }
 
     public static Optional<Boolean> test_BOOLeaN() {
@@ -226,9 +234,17 @@ public final class TestProperties {
         return Optional.ofNullable(tryParseBoolean(value));
     }
 
+    public static void test_BOOLeaN(Boolean value) {
+        SystemProperties.set("ro.vendor.test.b", value == null ? "" : value.toString());
+    }
+
     public static Optional<Long> vendor_os_test_long() {
         String value = SystemProperties.get("vendor.vendor_os_test-long");
         return Optional.ofNullable(tryParseLong(value));
+    }
+
+    public static void vendor_os_test_long(Long value) {
+        SystemProperties.set("vendor.vendor_os_test-long", value == null ? "" : value.toString());
     }
 
     public static List<Integer> test_list_int() {
@@ -236,10 +252,19 @@ public final class TestProperties {
         return tryParseList(v -> tryParseInteger(v), value);
     }
 
+    public static void test_list_int(List<Integer> value) {
+        SystemProperties.set("vendor.test_list_int", value == null ? "" : formatList(value));
+    }
+
     @Deprecated
     public static List<String> test_strlist() {
         String value = SystemProperties.get("vendor.test_strlist");
         return tryParseList(v -> tryParseString(v), value);
+    }
+
+    @Deprecated
+    public static void test_strlist(List<String> value) {
+        SystemProperties.set("vendor.test_strlist", value == null ? "" : formatList(value));
     }
 }
 )";

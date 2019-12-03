@@ -174,16 +174,22 @@ constexpr const char* kExpectedPublicHeaderOutput =
 namespace android::sysprop::PlatformProperties {
 
 std::optional<std::int32_t> test_int();
+bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
+bool test_string(const std::optional<std::string>& value);
 
 std::optional<bool> test_BOOLeaN();
+bool test_BOOLeaN(const std::optional<bool>& value);
 
 std::optional<std::int64_t> android_os_test_long();
+bool android_os_test_long(const std::optional<std::int64_t>& value);
 
 std::vector<std::optional<std::int32_t>> test_list_int();
+bool test_list_int(const std::vector<std::optional<std::int32_t>>& value);
 
 [[deprecated]] std::vector<std::optional<std::string>> test_strlist();
+[[deprecated]] bool test_strlist(const std::vector<std::optional<std::string>>& value);
 
 }  // namespace android::sysprop::PlatformProperties
 )";
