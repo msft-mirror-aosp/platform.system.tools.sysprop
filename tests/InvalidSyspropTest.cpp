@@ -62,6 +62,19 @@ prop {
 }
 )";
 
+constexpr const char* kInvalidPropName =
+    R"(
+owner: Vendor
+module: "vendor.module.name"
+prop {
+    api_name: "foo"
+    type: Integer
+    scope: Internal
+    access: Readonly
+    prop_name: "foo$bar"
+}
+)";
+
 constexpr const char* kEmptyEnumValues =
     R"(
 owner: Odm
@@ -104,7 +117,8 @@ constexpr const char* kInvalidNamespaceForPlatform =
 owner: Platform
 module: "android.PlatformProperties"
 prop {
-    api_name: "vendor.build.utc_long"
+    api_name: "vendor_build_utc_long"
+    prop_name: "vendor.build.utc_long"
     type: Long
     scope: Public
     access: ReadWrite
@@ -161,6 +175,7 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kDuplicatedField, "Duplicated API name \"dup\""},
     {kEmptyProp, "There is no defined property"},
     {kInvalidApiName, "Invalid API name \"!@#$\""},
+    {kInvalidPropName, "Invalid prop name \"foo$bar\""},
     {kEmptyEnumValues, "Invalid enum value \"\" for API \"empty_enum_value\""},
     {kDuplicatedEnumValue, "Duplicated enum value \"On\" for API \"status\""},
     {kInvalidModuleName, "Invalid module name \"\""},
