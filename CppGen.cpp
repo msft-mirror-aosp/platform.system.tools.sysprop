@@ -283,7 +283,7 @@ std::string GenerateHeader(const sysprop::Properties& props,
 
     if (prop.deprecated()) writer.Write("[[deprecated]] ");
     writer.Write("%s %s();\n", prop_type.c_str(), prop_id.c_str());
-    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
+    if (prop.access() != sysprop::Readonly) {
       if (prop.deprecated()) writer.Write("[[deprecated]] ");
       writer.Write("bool %s(const %s& value);\n", prop_id.c_str(),
                    prop_type.c_str());
