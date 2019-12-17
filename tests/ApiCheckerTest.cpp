@@ -60,7 +60,14 @@ props {
         type: Boolean
         scope: Public
         access: ReadWrite
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
+    }
+    prop {
+        api_name: "prop4"
+        type: String
+        scope: Public
+        access: Readonly
+        prop_name: "ro.prop4"
     }
 }
 )";
@@ -79,18 +86,27 @@ props {
     }
     prop {
         api_name: "prop2"
-        type: String
+        type: Integer
         scope: Public
         access: Writeonce
-        prop_name: "ro.prop2"
+        prop_name: "ro.public.prop2"
     }
     prop {
         api_name: "prop3"
         type: Boolean
         scope: Public
         access: ReadWrite
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
     }
+    prop {
+        api_name: "prop4"
+        type: String
+        scope: Public
+        access: Readonly
+        prop_name: "ro.prop4"
+        deprecated: true
+    }
+
 }
 )";
 
@@ -112,7 +128,14 @@ props {
         scope: Internal
         access: Readonly
         integer_as_bool: true,
-        prop_name: "prop3"
+        prop_name: "ctl.start$prop3"
+    }
+    prop {
+        api_name: "prop4"
+        type: Boolean
+        scope: Internal
+        access: ReadWrite
+        prop_name: "prop4"
     }
 }
 )";
@@ -152,9 +175,10 @@ TEST(SyspropTest, ApiCheckerTest) {
 
   EXPECT_EQ(res.error().message(),
             "Prop prop1 has been removed\n"
-            "Type of prop prop2 has been changed\n"
-            "Underlying property of prop prop2 has been changed\n"
             "Accessibility of prop prop3 has become more restrictive\n"
             "Scope of prop prop3 has become more restrictive\n"
-            "Integer-as-bool of prop prop3 has been changed\n");
+            "Integer-as-bool of prop prop3 has been changed\n"
+            "Type of prop prop4 has been changed\n"
+            "Scope of prop prop4 has become more restrictive\n"
+            "Underlying property of prop prop4 has been changed\n");
 }
