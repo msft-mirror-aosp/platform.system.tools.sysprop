@@ -1,7 +1,8 @@
 {
   "presubmit": [
     {
-      "name": "sysprop_test"
+      "name": "sysprop_test",
+      "host": true
     }
   ]
 }
