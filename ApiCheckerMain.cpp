@@ -43,21 +43,21 @@ int main(int argc, char* argv[]) {
 
   sysprop::SyspropLibraryApis latest, current;
 
-  if (auto res = ParseApiFile(argv[1]); res) {
+  if (auto res = ParseApiFile(argv[1]); res.ok()) {
     latest = std::move(*res);
   } else {
     LOG(FATAL) << "parsing sysprop_library API file " << argv[1]
                << " failed: " << res.error();
   }
 
-  if (auto res = ParseApiFile(argv[2]); res) {
+  if (auto res = ParseApiFile(argv[2]); res.ok()) {
     current = std::move(*res);
   } else {
     LOG(FATAL) << "parsing sysprop_library API file " << argv[2]
                << " failed: " << res.error();
   }
 
-  if (auto res = CompareApis(latest, current); !res) {
+  if (auto res = CompareApis(latest, current); !res.ok()) {
     LOG(ERROR) << "sysprop_library API check failed:\n" << res.error();
     return EXIT_FAILURE;
   }
