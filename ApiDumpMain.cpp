@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   std::map<std::string, sysprop::Properties> modules;
 
   for (int i = 2; i < argc; ++i) {
-    if (auto res = ParseProps(argv[i]); res) {
+    if (auto res = ParseProps(argv[i]); res.ok()) {
       if (!modules.emplace(res->module(), *res).second) {
         LOG(FATAL) << "duplicated module name " << res->module();
       }
