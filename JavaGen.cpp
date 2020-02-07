@@ -402,7 +402,7 @@ Result<void> GenerateJavaLibrary(const std::string& input_file_path,
                                  const std::string& java_output_dir) {
   sysprop::Properties props;
 
-  if (auto res = ParseProps(input_file_path); res) {
+  if (auto res = ParseProps(input_file_path); res.ok()) {
     props = std::move(*res);
   } else {
     return res.error();
