@@ -44,14 +44,14 @@ prop {
     access: ReadWrite
 }
 prop {
-    api_name: "test.string"
+    api_name: "test_string"
     type: String
     prop_name: "android.test.string"
     scope: Public
     access: ReadWrite
 }
 prop {
-    api_name: "test.enum"
+    api_name: "test_enum"
     type: Enum
     prop_name: "android.test.enum"
     enum_values: "a|b|c|D|e|f|G"
@@ -66,7 +66,7 @@ prop {
     access: Writeonce
 }
 prop {
-    api_name: "android.os_test-long"
+    api_name: "android_os_test-long"
     type: Long
     scope: Public
     access: ReadWrite
@@ -84,7 +84,7 @@ prop {
     access: ReadWrite
 }
 prop {
-    api_name: "test.strlist"
+    api_name: "test_strlist"
     type: StringList
     scope: Public
     access: ReadWrite
@@ -174,16 +174,22 @@ constexpr const char* kExpectedPublicHeaderOutput =
 namespace android::sysprop::PlatformProperties {
 
 std::optional<std::int32_t> test_int();
+bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
+bool test_string(const std::optional<std::string>& value);
 
 std::optional<bool> test_BOOLeaN();
+bool test_BOOLeaN(const std::optional<bool>& value);
 
 std::optional<std::int64_t> android_os_test_long();
+bool android_os_test_long(const std::optional<std::int64_t>& value);
 
 std::vector<std::optional<std::int32_t>> test_list_int();
+bool test_list_int(const std::vector<std::optional<std::int32_t>>& value);
 
 [[deprecated]] std::vector<std::optional<std::string>> test_strlist();
+[[deprecated]] bool test_strlist(const std::vector<std::optional<std::string>>& value);
 
 }  // namespace android::sysprop::PlatformProperties
 )";
@@ -321,16 +327,19 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
+    if (*str == '\0') return ret;
     const char* p = str;
     for (;;) {
-        const char* found = p;
-        while (*found != '\0' && *found != ',') {
-            ++found;
+        const char* r = p;
+        std::string value;
+        while (*r != ',') {
+            if (*r == '\\') ++r;
+            if (*r == '\0') break;
+            value += *r++;
         }
-        std::string value(p, found);
         ret.emplace_back(DoParse<typename Vec::value_type>(value.c_str()));
-        if (*found == '\0') break;
-        p = found + 1;
+        if (*r == '\0') break;
+        p = r + 1;
     }
     return ret;
 }
@@ -370,10 +379,15 @@ template <typename T>
     bool first = true;
 
     for (auto&& element : value) {
-        if (!first) ret += ",";
+        if (!first) ret += ',';
         else first = false;
         if constexpr(std::is_same_v<T, std::optional<std::string>>) {
-            if (element) ret += *element;
+            if (element) {
+                for (char c : *element) {
+                    if (c == '\\' || c == ',') ret += '\\';
+                    ret += c;
+                }
+            }
         } else {
             ret += FormatValue(element);
         }
@@ -439,11 +453,11 @@ bool test_BOOLeaN(const std::optional<bool>& value) {
 }
 
 std::optional<std::int64_t> android_os_test_long() {
-    return GetProp<std::optional<std::int64_t>>("android.os_test-long");
+    return GetProp<std::optional<std::int64_t>>("android_os_test-long");
 }
 
 bool android_os_test_long(const std::optional<std::int64_t>& value) {
-    return __system_property_set("android.os_test-long", FormatValue(value).c_str()) == 0;
+    return __system_property_set("android_os_test-long", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<double>> test_double_list() {
@@ -463,11 +477,11 @@ bool test_list_int(const std::vector<std::optional<std::int32_t>>& value) {
 }
 
 std::vector<std::optional<std::string>> test_strlist() {
-    return GetProp<std::vector<std::optional<std::string>>>("test.strlist");
+    return GetProp<std::vector<std::optional<std::string>>>("test_strlist");
 }
 
 bool test_strlist(const std::vector<std::optional<std::string>>& value) {
-    return __system_property_set("test.strlist", FormatValue(value).c_str()) == 0;
+    return __system_property_set("test_strlist", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<el_values>> el() {

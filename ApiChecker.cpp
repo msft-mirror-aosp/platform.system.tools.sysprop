@@ -38,7 +38,7 @@ Result<void> CompareProps(const sysprop::Properties& latest,
   bool latest_empty = true;
   for (int i = 0; i < latest.prop_size(); ++i) {
     const auto& latest_prop = latest.prop(i);
-    if (latest_prop.deprecated()) {
+    if (latest_prop.deprecated() || latest_prop.scope() == sysprop::Internal) {
       continue;
     }
 
@@ -107,7 +107,7 @@ Result<void> CompareApis(const sysprop::SyspropLibraryApis& latest,
     // only deprecated properties.
     if (auto res =
             CompareProps(latest.props(i), propsMap[latest.props(i).module()]);
-        !res) {
+        !res.ok()) {
       return res;
     }
   }
