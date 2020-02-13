@@ -440,7 +440,7 @@ Result<void> GenerateCppFiles(const std::string& input_file_path,
                               const std::string& include_name) {
   sysprop::Properties props;
 
-  if (auto res = ParseProps(input_file_path); res) {
+  if (auto res = ParseProps(input_file_path); res.ok()) {
     props = std::move(*res);
   } else {
     return res.error();
