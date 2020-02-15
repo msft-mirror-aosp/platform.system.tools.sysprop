@@ -555,7 +555,7 @@ TEST(SyspropTest, JavaGenTest) {
   };
 
   for (auto [scope, expected_output] : tests) {
-    ASSERT_TRUE(GenerateJavaLibrary(temp_file.path, scope, temp_dir.path));
+    ASSERT_RESULT_OK(GenerateJavaLibrary(temp_file.path, scope, temp_dir.path));
 
     std::string java_output_path =
         temp_dir.path + "/com/somecompany/TestProperties.java"s;

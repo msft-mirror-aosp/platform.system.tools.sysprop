@@ -150,7 +150,7 @@ TEST(SyspropTest, ApiCheckerTest) {
 
   std::string err;
   auto latest_api = ParseApiFile(latest_file.path);
-  ASSERT_TRUE(latest_api);
+  ASSERT_RESULT_OK(latest_api);
 
   TemporaryFile current_file;
   close(current_file.fd);
@@ -158,8 +158,8 @@ TEST(SyspropTest, ApiCheckerTest) {
   ASSERT_TRUE(android::base::WriteStringToFile(kCurrentApi, current_file.path));
 
   auto current_api = ParseApiFile(current_file.path);
-  ASSERT_TRUE(current_api);
-  EXPECT_TRUE(CompareApis(*latest_api, *current_api));
+  ASSERT_RESULT_OK(current_api);
+  EXPECT_RESULT_OK(CompareApis(*latest_api, *current_api));
 
   TemporaryFile invalid_current_file;
   close(invalid_current_file.fd);
@@ -168,10 +168,10 @@ TEST(SyspropTest, ApiCheckerTest) {
                                                invalid_current_file.path));
 
   auto invalid_current_api = ParseApiFile(invalid_current_file.path);
-  ASSERT_TRUE(invalid_current_api);
+  ASSERT_RESULT_OK(invalid_current_api);
 
   auto res = CompareApis(*latest_api, *invalid_current_api);
-  EXPECT_FALSE(res);
+  EXPECT_FALSE(res.ok());
 
   EXPECT_EQ(res.error().message(),
             "Prop prop1 has been removed\n"
