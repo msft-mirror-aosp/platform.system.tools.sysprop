@@ -40,8 +40,6 @@
 
 #include "sysprop.pb.h"
 
-using android::base::ErrnoErrorf;
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {

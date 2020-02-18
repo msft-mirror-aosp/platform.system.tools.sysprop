@@ -26,7 +26,6 @@
 
 #include "CppGen.h"
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
