@@ -19,7 +19,6 @@
 #include <string>
 #include <unordered_map>
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
