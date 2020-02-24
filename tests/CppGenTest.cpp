@@ -207,7 +207,15 @@ constexpr const char* kExpectedSourceOutput =
 #include <utility>
 
 #include <strings.h>
+#ifdef __BIONIC__
 #include <sys/system_properties.h>
+#else
+#include <android-base/properties.h>
+static int __system_property_set(const char* key, const char* value) {
+    android::base::SetProperty(key, value);
+    return 0;
+}
+#endif
 
 #include <android-base/parseint.h>
 #include <log/log.h>
@@ -398,6 +406,7 @@ template <typename T>
 
 template <typename T>
 T GetProp(const char* key) {
+#ifdef __BIONIC__
     T ret;
     auto pi = __system_property_find(key);
     if (pi != nullptr) {
@@ -406,6 +415,9 @@ T GetProp(const char* key) {
         }, &ret);
     }
     return ret;
+#else
+    return TryParse<T>(android::base::GetProperty(key, "").c_str());
+#endif
 }
 
 }  // namespace
