@@ -27,7 +27,6 @@
 #include "JavaGen.h"
 #include "sysprop.pb.h"
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {

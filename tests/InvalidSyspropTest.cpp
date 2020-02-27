@@ -203,7 +203,7 @@ TEST(SyspropTest, InvalidSyspropTest) {
   for (auto [test_case, expected_error] : kTestCasesAndExpectedErrors) {
     ASSERT_TRUE(android::base::WriteStringToFile(test_case, file.path));
     auto res = ParseProps(file.path);
-    EXPECT_FALSE(res);
+    EXPECT_FALSE(res.ok());
     EXPECT_EQ(res.error().message(), expected_error);
   }
 }
