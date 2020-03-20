@@ -207,7 +207,15 @@ constexpr const char* kExpectedSourceOutput =
 #include <utility>
 
 #include <strings.h>
+#ifdef __BIONIC__
 #include <sys/system_properties.h>
+#else
+#include <android-base/properties.h>
+static int __system_property_set(const char* key, const char* value) {
+    android::base::SetProperty(key, value);
+    return 0;
+}
+#endif
 
 #include <android-base/parseint.h>
 #include <log/log.h>
@@ -327,16 +335,19 @@ template <> [[maybe_unused]] std::optional<std::string> DoParse(const char* str)
 
 template <typename Vec> [[maybe_unused]] Vec DoParseList(const char* str) {
     Vec ret;
+    if (*str == '\0') return ret;
     const char* p = str;
     for (;;) {
-        const char* found = p;
-        while (*found != '\0' && *found != ',') {
-            ++found;
+        const char* r = p;
+        std::string value;
+        while (*r != ',') {
+            if (*r == '\\') ++r;
+            if (*r == '\0') break;
+            value += *r++;
         }
-        std::string value(p, found);
         ret.emplace_back(DoParse<typename Vec::value_type>(value.c_str()));
-        if (*found == '\0') break;
-        p = found + 1;
+        if (*r == '\0') break;
+        p = r + 1;
     }
     return ret;
 }
@@ -376,10 +387,15 @@ template <typename T>
     bool first = true;
 
     for (auto&& element : value) {
-        if (!first) ret += ",";
+        if (!first) ret += ',';
         else first = false;
         if constexpr(std::is_same_v<T, std::optional<std::string>>) {
-            if (element) ret += *element;
+            if (element) {
+                for (char c : *element) {
+                    if (c == '\\' || c == ',') ret += '\\';
+                    ret += c;
+                }
+            }
         } else {
             ret += FormatValue(element);
         }
@@ -390,6 +406,7 @@ template <typename T>
 
 template <typename T>
 T GetProp(const char* key) {
+#ifdef __BIONIC__
     T ret;
     auto pi = __system_property_find(key);
     if (pi != nullptr) {
@@ -398,6 +415,9 @@ T GetProp(const char* key) {
         }, &ret);
     }
     return ret;
+#else
+    return TryParse<T>(android::base::GetProperty(key, "").c_str());
+#endif
 }
 
 }  // namespace
@@ -501,9 +521,9 @@ TEST(SyspropTest, CppGenTest) {
   auto sysprop_deleter = android::base::make_scope_guard(
       [&] { unlink(temp_sysprop_path.c_str()); });
 
-  ASSERT_TRUE(GenerateCppFiles(temp_sysprop_path, temp_dir.path,
-                               temp_dir.path + "/public"s, temp_dir.path,
-                               "properties/PlatformProperties.sysprop.h"));
+  ASSERT_RESULT_OK(GenerateCppFiles(temp_sysprop_path, temp_dir.path,
+                                    temp_dir.path + "/public"s, temp_dir.path,
+                                    "properties/PlatformProperties.sysprop.h"));
 
   std::string header_output_path =
       temp_dir.path + "/PlatformProperties.sysprop.h"s;

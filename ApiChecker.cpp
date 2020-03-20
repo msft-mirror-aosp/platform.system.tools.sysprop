@@ -19,7 +19,6 @@
 #include <string>
 #include <unordered_map>
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
@@ -107,7 +106,7 @@ Result<void> CompareApis(const sysprop::SyspropLibraryApis& latest,
     // only deprecated properties.
     if (auto res =
             CompareProps(latest.props(i), propsMap[latest.props(i).module()]);
-        !res) {
+        !res.ok()) {
       return res;
     }
   }

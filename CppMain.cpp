@@ -26,7 +26,6 @@
 
 #include "CppGen.h"
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
@@ -101,7 +100,7 @@ Result<Arguments> ParseArgs(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   Arguments args;
-  if (auto res = ParseArgs(argc, argv); res) {
+  if (auto res = ParseArgs(argc, argv); res.ok()) {
     args = std::move(*res);
   } else {
     LOG(ERROR) << argv[0] << ": " << res.error();
@@ -111,7 +110,7 @@ int main(int argc, char* argv[]) {
   if (auto res = GenerateCppFiles(args.input_file_path, args.header_dir,
                                   args.public_header_dir, args.source_dir,
                                   args.include_name);
-      !res) {
+      !res.ok()) {
     LOG(FATAL) << "Error during generating cpp sysprop from "
                << args.input_file_path << ": " << res.error();
   }

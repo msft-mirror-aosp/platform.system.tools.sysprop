@@ -31,8 +31,6 @@
 #include "Common.h"
 #include "sysprop.pb.h"
 
-using android::base::ErrnoErrorf;
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
@@ -42,6 +40,7 @@ constexpr const char* kIndent = "    ";
 constexpr const char* kJavaFileImports =
     R"(import android.os.SystemProperties;
 
+import java.lang.StringBuilder;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -53,7 +52,7 @@ import java.util.stream.Collectors;
 )";
 
 constexpr const char* kJavaParsersAndFormatters =
-    R"(private static Boolean tryParseBoolean(String str) {
+    R"s(private static Boolean tryParseBoolean(String str) {
     switch (str.toLowerCase(Locale.US)) {
         case "1":
         case "true":
@@ -107,8 +106,17 @@ private static <T> List<T> tryParseList(Function<String, T> elementParser, Strin
 
     List<T> ret = new ArrayList<>();
 
-    for (String element : str.split(",")) {
-        ret.add(elementParser.apply(element));
+    int p = 0;
+    for (;;) {
+        StringBuilder sb = new StringBuilder();
+        while (p < str.length() && str.charAt(p) != ',') {
+            if (str.charAt(p) == '\\') ++p;
+            if (p == str.length()) break;
+            sb.append(str.charAt(p++));
+        }
+        ret.add(elementParser.apply(sb.toString()));
+        if (p == str.length()) break;
+        ++p;
     }
 
     return ret;
@@ -126,11 +134,15 @@ private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, S
     return ret;
 }
 
+private static String escape(String str) {
+    return str.replaceAll("([\\\\,])", "\\\\$1");
+}
+
 private static <T> String formatList(List<T> list) {
     StringJoiner joiner = new StringJoiner(",");
 
     for (T element : list) {
-        joiner.add(element == null ? "" : element.toString());
+        joiner.add(element == null ? "" : escape(element.toString()));
     }
 
     return joiner.toString();
@@ -145,7 +157,7 @@ private static <T extends Enum<T>> String formatEnumList(List<T> list, Function<
 
     return joiner.toString();
 }
-)";
+)s";
 
 const std::regex kRegexDot{"\\."};
 const std::regex kRegexUnderscore{"_"};
@@ -388,7 +400,7 @@ Result<void> GenerateJavaLibrary(const std::string& input_file_path,
                                  const std::string& java_output_dir) {
   sysprop::Properties props;
 
-  if (auto res = ParseProps(input_file_path); res) {
+  if (auto res = ParseProps(input_file_path); res.ok()) {
     props = std::move(*res);
   } else {
     return res.error();

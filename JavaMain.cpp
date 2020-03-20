@@ -27,7 +27,6 @@
 #include "JavaGen.h"
 #include "sysprop.pb.h"
 
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
@@ -93,14 +92,14 @@ Result<void> ParseArgs(int argc, char* argv[], Arguments* args) {
 int main(int argc, char* argv[]) {
   Arguments args;
   std::string err;
-  if (auto res = ParseArgs(argc, argv, &args); !res) {
+  if (auto res = ParseArgs(argc, argv, &args); !res.ok()) {
     LOG(ERROR) << res.error();
     PrintUsage(argv[0]);
   }
 
   if (auto res = GenerateJavaLibrary(args.input_file_path, args.scope,
                                      args.java_output_dir);
-      !res) {
+      !res.ok()) {
     LOG(FATAL) << "Error during generating java sysprop from "
                << args.input_file_path << ": " << res.error();
   }

@@ -40,8 +40,6 @@
 
 #include "sysprop.pb.h"
 
-using android::base::ErrnoErrorf;
-using android::base::Errorf;
 using android::base::Result;
 
 namespace {
@@ -223,7 +221,7 @@ Result<void> ValidateProps(const sysprop::Properties& props) {
 
   for (int i = 0; i < props.prop_size(); ++i) {
     const auto& prop = props.prop(i);
-    if (auto res = ValidateProp(props, prop); !res) return res;
+    if (auto res = ValidateProp(props, prop); !res.ok()) return res;
   }
 
   std::unordered_set<std::string> prop_names;
@@ -288,7 +286,7 @@ Result<sysprop::Properties> ParseProps(const std::string& input_file_path) {
     return Errorf("Error parsing file {}", input_file_path);
   }
 
-  if (auto res = ValidateProps(ret); !res) {
+  if (auto res = ValidateProps(ret); !res.ok()) {
     return res.error();
   }
 
@@ -320,7 +318,7 @@ Result<sysprop::SyspropLibraryApis> ParseApiFile(
                     input_file_path, props->module());
     }
 
-    if (auto res = ValidateProps(*props); !res) {
+    if (auto res = ValidateProps(*props); !res.ok()) {
       return res.error();
     }
 
