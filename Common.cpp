@@ -274,6 +274,10 @@ std::string GetModuleName(const sysprop::Properties& props) {
   return module.substr(module.rfind('.') + 1);
 }
 
+std::vector<std::string> ParseEnumValues(const std::string& enum_values) {
+  return android::base::Split(enum_values, "|");
+}
+
 Result<sysprop::Properties> ParseProps(const std::string& input_file_path) {
   sysprop::Properties ret;
   std::string file_contents;
