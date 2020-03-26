@@ -317,8 +317,7 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("public static enum %s {\n",
                    GetJavaEnumTypeName(prop).c_str());
       writer.Indent();
-      std::vector<std::string> values =
-          android::base::Split(prop.enum_values(), "|");
+      std::vector<std::string> values = ParseEnumValues(prop.enum_values());
       for (int i = 0; i < values.size(); ++i) {
         const std::string& name = values[i];
         writer.Write("%s(\"%s\")", ToUpper(name).c_str(), name.c_str());
