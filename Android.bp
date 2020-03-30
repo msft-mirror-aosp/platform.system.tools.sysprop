@@ -18,7 +18,7 @@ cc_defaults {
     name: "sysprop-defaults",
     srcs: ["sysprop.proto", "Common.cpp", "CodeWriter.cpp"],
     shared_libs: ["libbase", "liblog"],
-    static_libs: ["libc++fs"],
+    static_libs: ["libc++fs", "libpropertyinfoserializer"],
     proto: {
         type: "full",
     },
@@ -49,12 +49,19 @@ cc_binary_host {
     srcs: ["ApiDumpMain.cpp"],
 }
 
+cc_binary_host {
+    name: "sysprop_type_checker",
+    defaults: ["sysprop-defaults"],
+    srcs: ["TypeChecker.cpp", "TypeCheckerMain.cpp"],
+}
+
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
     srcs: ["ApiChecker.cpp",
-            "CppGen.cpp",
+           "CppGen.cpp",
            "JavaGen.cpp",
+           "TypeChecker.cpp",
            "tests/*.cpp"],
     test_suites: ["general-tests"],
 }

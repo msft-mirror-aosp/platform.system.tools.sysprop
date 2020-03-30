@@ -338,8 +338,7 @@ std::string GenerateSource(const sysprop::Properties& props,
     writer.Write("constexpr const std::pair<const char*, %s> %s_list[] = {\n",
                  enum_name.c_str(), prop_id.c_str());
     writer.Indent();
-    for (const std::string& name :
-         android::base::Split(prop.enum_values(), "|")) {
+    for (const std::string& name : ParseEnumValues(prop.enum_values())) {
       writer.Write("{\"%s\", %s::%s},\n", name.c_str(), enum_name.c_str(),
                    ToUpper(name).c_str());
     }
