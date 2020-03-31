@@ -61,6 +61,7 @@ message Property {
   string enum_values = 6;
   bool integer_as_bool = 7;
   bool deprecated = 8;
+  string legacy_prop_name = 9;
 }
 
 message Properties {

@@ -141,6 +141,11 @@ Result<void> ValidateProp(const sysprop::Properties& props,
     return Errorf("Invalid prop name \"{}\"", prop.prop_name());
   }
 
+  std::string legacy_name = prop.legacy_prop_name();
+  if (!legacy_name.empty() && !IsCorrectPropertyName(legacy_name)) {
+    return Errorf("Invalid legacy prop name \"{}\"", legacy_name);
+  }
+
   static const std::regex vendor_regex(
       "(init\\.svc\\.|ro\\.|persist\\.)?vendor\\..+|ro\\.hardware\\..+");
   static const std::regex odm_regex(

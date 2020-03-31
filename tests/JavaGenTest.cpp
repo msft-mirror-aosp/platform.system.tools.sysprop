@@ -57,6 +57,7 @@ prop {
     enum_values: "a|b|c|D|e|f|G"
     scope: Internal
     access: ReadWrite
+    legacy_prop_name: "vendor.old.test_enum"
 }
 prop {
     api_name: "test_BOOLeaN"
@@ -106,6 +107,7 @@ constexpr const char* kExpectedPublicOutput =
 package com.somecompany;
 
 import android.os.SystemProperties;
+import android.util.Log;
 
 import java.lang.StringBuilder;
 import java.util.ArrayList;
@@ -289,6 +291,7 @@ constexpr const char* kExpectedInternalOutput =
 package com.somecompany;
 
 import android.os.SystemProperties;
+import android.util.Log;
 
 import java.lang.StringBuilder;
 import java.util.ArrayList;
@@ -454,6 +457,10 @@ public final class TestProperties {
 
     public static Optional<test_enum_values> test_enum() {
         String value = SystemProperties.get("vendor.test.enum");
+        if ("".equals(value)) {
+            Log.d("TestProperties", "prop vendor.test.enum doesn't exist; fallback to legacy prop vendor.old.test_enum");
+            value = SystemProperties.get("vendor.old.test_enum");
+        }
         return Optional.ofNullable(tryParseEnum(test_enum_values.class, value));
     }
 
