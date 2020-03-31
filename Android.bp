@@ -69,7 +69,7 @@ cc_test_host {
 java_defaults {
     name: "sysprop-library-stub-defaults",
     srcs: [
-        "stub/android/os/SystemProperties.java",
+        "stub/**/*.java",
     ],
     installable: false,
     sdk_version: "core_current",
