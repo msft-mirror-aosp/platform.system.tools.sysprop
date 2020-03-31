@@ -39,6 +39,7 @@ constexpr const char* kIndent = "    ";
 
 constexpr const char* kJavaFileImports =
     R"(import android.os.SystemProperties;
+import android.util.Log;
 
 import java.lang.StringBuilder;
 import java.util.ArrayList;
@@ -209,17 +210,18 @@ std::string GetJavaTypeName(const sysprop::Property& prop) {
 std::string GetParsingExpression(const sysprop::Property& prop) {
   switch (prop.type()) {
     case sysprop::Boolean:
-      return "tryParseBoolean(value)";
+      return "Optional.ofNullable(tryParseBoolean(value))";
     case sysprop::Integer:
-      return "tryParseInteger(value)";
+      return "Optional.ofNullable(tryParseInteger(value))";
     case sysprop::Long:
-      return "tryParseLong(value)";
+      return "Optional.ofNullable(tryParseLong(value))";
     case sysprop::Double:
-      return "tryParseDouble(value)";
+      return "Optional.ofNullable(tryParseDouble(value))";
     case sysprop::String:
-      return "tryParseString(value)";
+      return "Optional.ofNullable(tryParseString(value))";
     case sysprop::Enum:
-      return "tryParseEnum(" + GetJavaEnumTypeName(prop) + ".class, value)";
+      return "Optional.ofNullable(tryParseEnum(" + GetJavaEnumTypeName(prop) +
+             ".class, value))";
     case sysprop::EnumList:
       return "tryParseEnumList(" + GetJavaEnumTypeName(prop) +
              ".class, "
@@ -352,23 +354,31 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
     if (IsListProp(prop)) {
       writer.Write("public static %s %s() {\n", prop_type.c_str(),
                    prop_id.c_str());
-      writer.Indent();
-      writer.Write("String value = SystemProperties.get(\"%s\");\n",
-                   prop.prop_name().c_str());
-      writer.Write("return %s;\n", GetParsingExpression(prop).c_str());
-      writer.Dedent();
-      writer.Write("}\n");
     } else {
       writer.Write("public static Optional<%s> %s() {\n", prop_type.c_str(),
                    prop_id.c_str());
+    }
+    writer.Indent();
+    writer.Write("String value = SystemProperties.get(\"%s\");\n",
+                 prop.prop_name().c_str());
+    if (!prop.legacy_prop_name().empty()) {
+      // SystemProperties.get() returns "" (empty string) when the property
+      // doesn't exist
+      writer.Write("if (\"\".equals(value)) {\n");
       writer.Indent();
-      writer.Write("String value = SystemProperties.get(\"%s\");\n",
-                   prop.prop_name().c_str());
-      writer.Write("return Optional.ofNullable(%s);\n",
-                   GetParsingExpression(prop).c_str());
+      writer.Write(
+          "Log.d(\"%s\", \"prop %s doesn't exist; fallback to legacy prop "
+          "%s\");\n",
+          class_name.c_str(), prop.prop_name().c_str(),
+          prop.legacy_prop_name().c_str());
+      writer.Write("value = SystemProperties.get(\"%s\");\n",
+                   prop.legacy_prop_name().c_str());
       writer.Dedent();
       writer.Write("}\n");
     }
+    writer.Write("return %s;\n", GetParsingExpression(prop).c_str());
+    writer.Dedent();
+    writer.Write("}\n");
 
     if (prop.access() != sysprop::Readonly) {
       writer.Write("\n");
