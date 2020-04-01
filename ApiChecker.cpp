@@ -76,6 +76,10 @@ Result<void> CompareProps(const sysprop::Properties& latest,
       err += "Integer-as-bool of prop " + latest_prop.api_name() +
              " has been changed\n";
     }
+    if (latest_prop.legacy_prop_name() != current_prop.legacy_prop_name()) {
+      err += "Legacy prop of prop " + latest_prop.api_name() +
+             " has been changed\n";
+    }
   }
 
   if (!latest_empty) {

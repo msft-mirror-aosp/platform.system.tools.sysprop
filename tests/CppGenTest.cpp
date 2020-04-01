@@ -49,6 +49,7 @@ prop {
     prop_name: "android.test.string"
     scope: Public
     access: ReadWrite
+    legacy_prop_name: "legacy.android.test.string"
 }
 prop {
     api_name: "test_enum"
@@ -57,6 +58,7 @@ prop {
     enum_values: "a|b|c|D|e|f|G"
     scope: Internal
     access: ReadWrite
+    legacy_prop_name: "android.test.old.enum"
 }
 prop {
     api_name: "test_BOOLeaN"
@@ -405,19 +407,23 @@ template <typename T>
 }
 
 template <typename T>
-T GetProp(const char* key) {
+T GetProp(const char* key, const char* legacy = nullptr) {
+    std::string value;
 #ifdef __BIONIC__
-    T ret;
     auto pi = __system_property_find(key);
     if (pi != nullptr) {
         __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
-            *static_cast<T*>(cookie) = TryParse<T>(value);
-        }, &ret);
+            *static_cast<std::string*>(cookie) = value;
+        }, &value);
     }
-    return ret;
 #else
-    return TryParse<T>(android::base::GetProperty(key, "").c_str());
+    value = android::base::GetProperty(key, "");
 #endif
+    if (value.empty() && legacy) {
+        ALOGD("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
+        return GetProp<T>(legacy);
+    }
+    return TryParse<T>(value.c_str());
 }
 
 }  // namespace
@@ -441,7 +447,7 @@ bool test_int(const std::optional<std::int32_t>& value) {
 }
 
 std::optional<std::string> test_string() {
-    return GetProp<std::optional<std::string>>("android.test.string");
+    return GetProp<std::optional<std::string>>("android.test.string", "legacy.android.test.string");
 }
 
 bool test_string(const std::optional<std::string>& value) {
@@ -449,7 +455,7 @@ bool test_string(const std::optional<std::string>& value) {
 }
 
 std::optional<test_enum_values> test_enum() {
-    return GetProp<std::optional<test_enum_values>>("android.test.enum");
+    return GetProp<std::optional<test_enum_values>>("android.test.enum", "android.test.old.enum");
 }
 
 bool test_enum(const std::optional<test_enum_values>& value) {
