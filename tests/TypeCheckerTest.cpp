@@ -60,6 +60,7 @@ props {
         scope: Public
         access: Readonly
         prop_name: "ro.prop4"
+        legacy_prop_name: "ro.legacy.prop4"
         deprecated: true
     }
 
@@ -72,6 +73,7 @@ prop1           u:object_r:default_prop:s0 exact int
 ro.public.prop2 u:object_r:foo_prop:s0 exact enum c b a
 ctl.start$prop3 u:object_r:ctl_prop:s0 exact bool
 ro.prop4        u:object_r:bar_prop:s0 exact string
+ro.legacy.prop4 u:object_r:baz_prop:s0 exact string
 )";
 
 constexpr const char* kBadContexts =
@@ -80,6 +82,7 @@ prop1           u:object_r:default_prop:s0 exact double
 ro.public.prop2 u:object_r:foo_prop:s0 exact enum a c
 ctl.start$prop3 u:object_r:ctl_prop:s0 exact string
 ro.prop4        u:object_r:bar_prop:s0 exact int
+ro.legacy.prop4 u:object_r:baz_prop:s0 exact bool
 )";
 
 }  // namespace
@@ -127,5 +130,9 @@ TEST(SyspropTest, TypeCheckerTest) {
       "\n"
       "Type of prop 'ro.prop4' is incompatible with property_contexts\n"
       "In sysprop_library: String\n"
-      "In property_contexts: int (should be 'string')\n");
+      "In property_contexts: int (should be 'string')\n"
+      "\n"
+      "Type of prop 'ro.legacy.prop4' is incompatible with property_contexts\n"
+      "In sysprop_library: String\n"
+      "In property_contexts: bool (should be 'string')\n");
 }
