@@ -96,17 +96,23 @@ Result<void> CheckPropertyTypes(const sysprop::SyspropLibraryApis& api,
 
   for (auto& props : api.props()) {
     for (auto& prop : props.prop()) {
-      // Skip check if there is no matched property.
-      auto itr = types.find(prop.prop_name());
-      if (itr == types.end()) continue;
+      std::vector<std::string> prop_names{prop.prop_name()};
+      std::string legacy_name = prop.legacy_prop_name();
+      if (!legacy_name.empty()) prop_names.push_back(legacy_name);
 
-      if (!IsCompatible(prop, itr->second)) {
-        if (!err.empty()) err += "\n";
-        err += "Type of prop '" + prop.prop_name() +
-               "' is incompatible with property_contexts\n";
-        err += "In sysprop_library: " + GetTypeName(prop) + "\n";
-        err += "In property_contexts: " + itr->second + " (should be '" +
-               SyspropTypeToContextType(prop) + "')\n";
+      for (auto& prop_name : prop_names) {
+        // Skip check if there is no exactly matched property.
+        auto itr = types.find(prop_name);
+        if (itr == types.end()) continue;
+
+        if (!IsCompatible(prop, itr->second)) {
+          if (!err.empty()) err += "\n";
+          err += "Type of prop '" + prop_name +
+                 "' is incompatible with property_contexts\n";
+          err += "In sysprop_library: " + GetTypeName(prop) + "\n";
+          err += "In property_contexts: " + itr->second + " (should be '" +
+                 SyspropTypeToContextType(prop) + "')\n";
+        }
       }
     }
   }
