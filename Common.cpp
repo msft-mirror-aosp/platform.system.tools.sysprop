@@ -230,6 +230,7 @@ Result<void> ValidateProps(const sysprop::Properties& props) {
   }
 
   std::unordered_set<std::string> prop_names;
+  std::unordered_map<std::string, sysprop::Type> prop_types;
 
   for (int i = 0; i < props.prop_size(); ++i) {
     const auto& prop = props.prop(i);
@@ -237,6 +238,21 @@ Result<void> ValidateProps(const sysprop::Properties& props) {
 
     if (!res.second) {
       return Errorf("Duplicated API name \"{}\"", prop.api_name());
+    }
+
+    std::vector<std::string> prop_names{prop.prop_name()};
+    std::string legacy_name = prop.legacy_prop_name();
+    if (!legacy_name.empty()) prop_names.push_back(legacy_name);
+
+    sysprop::Type type = prop.type();
+
+    for (auto& name : prop_names) {
+      // get type if already exists. inserts mine if not.
+      sysprop::Type prev_type = prop_types.emplace(name, type).first->second;
+      if (prev_type != type) {
+        return Errorf("Type error on prop \"{}\": it's {} but was {}", name,
+                      sysprop::Type_Name(type), sysprop::Type_Name(prev_type));
+      }
     }
   }
 
@@ -295,11 +311,12 @@ Result<sysprop::Properties> ParseProps(const std::string& input_file_path) {
     return Errorf("Error parsing file {}", input_file_path);
   }
 
+  SetDefaultValues(&ret);
+
+  // validate after filling default values such as prop_name
   if (auto res = ValidateProps(ret); !res.ok()) {
     return res.error();
   }
-
-  SetDefaultValues(&ret);
 
   return ret;
 }
@@ -327,11 +344,12 @@ Result<sysprop::SyspropLibraryApis> ParseApiFile(
                     input_file_path, props->module());
     }
 
+    SetDefaultValues(props);
+
+    // validate after filling default values such as prop_name
     if (auto res = ValidateProps(*props); !res.ok()) {
       return res.error();
     }
-
-    SetDefaultValues(props);
   }
 
   return ret;
