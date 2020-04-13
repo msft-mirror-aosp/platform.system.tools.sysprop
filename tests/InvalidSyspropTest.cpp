@@ -152,6 +152,28 @@ prop {
 }
 )";
 
+constexpr const char* kTypeMismatch =
+    R"(
+owner: Platform
+module: "android.os.Type"
+prop {
+    prop_name: "prop"
+    type: Double
+    scope: Public
+    access: ReadWrite
+    api_name: "prop"
+}
+prop {
+    prop_name: "prop2"
+    legacy_prop_name: "prop"
+    type: Enum
+    enum_values: "a|b|c"
+    scope: Public
+    access: ReadWrite
+    api_name: "prop2"
+}
+)";
+
 /*
  * TODO: Some properties don't have prefix "ro." but not written in any
  * Java or C++ codes. They might be misnamed and should be readonly. Will
@@ -188,6 +210,7 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
      "\"ro.\""},
     {kIntegerAsBoolWithWrongType,
      "Prop \"long.prop\" has integer_as_bool: true, but not a boolean"},
+    {kTypeMismatch, "Type error on prop \"prop\": it's Enum but was Double"},
     /*    {kNoRoPrefixForReadonlyProperty,
          "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
          "\"ro.\""},*/
