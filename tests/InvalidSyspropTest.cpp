@@ -169,11 +169,24 @@ prop {
     type: Enum
     enum_values: "a|b|c"
     scope: Public
-    access: ReadWrite
+    access: Readonly
     api_name: "prop2"
 }
 )";
 
+constexpr const char* kLegacyNotReadonly =
+    R"(
+owner: Platform
+module: "android.os.Sysprop"
+prop {
+    prop_name: "prop"
+    type: String
+    scope: Public
+    access: ReadWrite
+    api_name: "prop"
+    legacy_prop_name: "legacy_prop"
+}
+)";
 /*
  * TODO: Some properties don't have prefix "ro." but not written in any
  * Java or C++ codes. They might be misnamed and should be readonly. Will
@@ -211,6 +224,8 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kIntegerAsBoolWithWrongType,
      "Prop \"long.prop\" has integer_as_bool: true, but not a boolean"},
     {kTypeMismatch, "Type error on prop \"prop\": it's Enum but was Double"},
+    {kLegacyNotReadonly,
+     "Prop \"prop\" which has legacy_prop_name must be Readonly"},
     /*    {kNoRoPrefixForReadonlyProperty,
          "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
          "\"ro.\""},*/
