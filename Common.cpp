@@ -142,8 +142,14 @@ Result<void> ValidateProp(const sysprop::Properties& props,
   }
 
   std::string legacy_name = prop.legacy_prop_name();
-  if (!legacy_name.empty() && !IsCorrectPropertyName(legacy_name)) {
-    return Errorf("Invalid legacy prop name \"{}\"", legacy_name);
+  if (!legacy_name.empty()) {
+    if (!IsCorrectPropertyName(legacy_name)) {
+      return Errorf("Invalid legacy prop name \"{}\"", legacy_name);
+    }
+    if (prop.access() != sysprop::Readonly) {
+      return Errorf("Prop \"{}\" which has legacy_prop_name must be Readonly",
+                    prop.prop_name());
+    }
   }
 
   static const std::regex vendor_regex(
