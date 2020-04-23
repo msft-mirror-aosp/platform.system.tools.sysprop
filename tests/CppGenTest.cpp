@@ -48,7 +48,7 @@ prop {
     type: String
     prop_name: "android.test.string"
     scope: Public
-    access: ReadWrite
+    access: Readonly
     legacy_prop_name: "legacy.android.test.string"
 }
 prop {
@@ -58,7 +58,6 @@ prop {
     enum_values: "a|b|c|D|e|f|G"
     scope: Internal
     access: ReadWrite
-    legacy_prop_name: "android.test.old.enum"
 }
 prop {
     api_name: "test_BOOLeaN"
@@ -121,7 +120,6 @@ std::optional<std::int32_t> test_int();
 bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
-bool test_string(const std::optional<std::string>& value);
 
 enum class test_enum_values {
     A,
@@ -179,7 +177,6 @@ std::optional<std::int32_t> test_int();
 bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
-bool test_string(const std::optional<std::string>& value);
 
 std::optional<bool> test_BOOLeaN();
 bool test_BOOLeaN(const std::optional<bool>& value);
@@ -450,12 +447,8 @@ std::optional<std::string> test_string() {
     return GetProp<std::optional<std::string>>("android.test.string", "legacy.android.test.string");
 }
 
-bool test_string(const std::optional<std::string>& value) {
-    return __system_property_set("android.test.string", value ? value->c_str() : "") == 0;
-}
-
 std::optional<test_enum_values> test_enum() {
-    return GetProp<std::optional<test_enum_values>>("android.test.enum", "android.test.old.enum");
+    return GetProp<std::optional<test_enum_values>>("android.test.enum");
 }
 
 bool test_enum(const std::optional<test_enum_values>& value) {
