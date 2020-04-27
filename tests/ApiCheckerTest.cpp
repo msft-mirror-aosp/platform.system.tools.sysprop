@@ -40,6 +40,17 @@ props {
 }
 props {
     owner: Platform
+    module: "android.legacy"
+    prop {
+        api_name: "legacy_prop"
+        type: String
+        scope: Public
+        access: Readonly
+        prop_name: "legacy_prop"
+    }
+}
+props {
+    owner: Platform
     module: "android.platprop"
     prop {
         api_name: "prop1"
@@ -74,6 +85,18 @@ props {
 
 constexpr const char* kCurrentApi =
     R"(
+props {
+    owner: Platform
+    module: "android.legacy"
+    prop {
+        api_name: "new_prop"
+        type: String
+        scope: Public
+        access: Readonly
+        prop_name: "new_prop"
+        legacy_prop_name: "legacy_prop"
+    }
+}
 props {
     owner: Platform
     module: "android.platprop"
@@ -112,6 +135,17 @@ props {
 
 constexpr const char* kInvalidCurrentApi =
     R"(
+props {
+    owner: Platform
+    module: "android.legacy"
+    prop {
+        api_name: "legacy_prop"
+        type: String
+        scope: Public
+        access: Readonly
+        prop_name: "legacy_prop"
+    }
+}
 props {
     owner: Platform
     module: "android.platprop"
