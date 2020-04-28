@@ -23,7 +23,6 @@
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <cerrno>
-#include <filesystem>
 #include <regex>
 #include <string>
 
@@ -31,17 +30,14 @@
 #include "Common.h"
 #include "sysprop.pb.h"
 
-using android::base::ErrnoErrorf;
-using android::base::Errorf;
-using android::base::Result;
-
 namespace {
 
 constexpr const char* kIndent = "    ";
 
 constexpr const char* kJavaFileImports =
-    R"(import android.os.SystemProperties;
+    R"(import android.annotation.SystemApi;
 
+import android.os.SystemProperties;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
@@ -156,8 +152,9 @@ std::string GetJavaPackageName(const sysprop::Properties& props);
 std::string GetJavaClassName(const sysprop::Properties& props);
 std::string GetParsingExpression(const sysprop::Property& prop);
 std::string GetFormattingExpression(const sysprop::Property& prop);
-std::string GenerateJavaClass(const sysprop::Properties& props,
-                              sysprop::Scope scope);
+void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope);
+bool GenerateJavaClass(const sysprop::Properties& props,
+                       std::string* java_result, std::string* err);
 
 std::string GetJavaEnumTypeName(const sysprop::Property& prop) {
   return ApiNameToIdentifier(prop.api_name()) + "_values";
@@ -276,8 +273,32 @@ std::string GetJavaClassName(const sysprop::Properties& props) {
   return module.substr(module.rfind('.') + 1);
 }
 
-std::string GenerateJavaClass(const sysprop::Properties& props,
-                              sysprop::Scope scope) {
+void WriteJavaAnnotation(CodeWriter& writer, sysprop::Scope scope) {
+  switch (scope) {
+    case sysprop::System:
+      writer.Write("/** @hide */\n");
+      writer.Write("@SystemApi\n");
+      break;
+    case sysprop::Internal:
+      writer.Write("/** @hide */\n");
+      break;
+    default:
+      break;
+  }
+}
+
+bool GenerateJavaClass(const sysprop::Properties& props,
+                       std::string* java_result,
+                       [[maybe_unused]] std::string* err) {
+  sysprop::Scope classScope = sysprop::Internal;
+
+  for (int i = 0; i < props.prop_size(); ++i) {
+    // Get least restrictive scope among props. For example, if all props
+    // are internal, class can be as well internal. However, class should
+    // be public or system if at least one prop is so.
+    classScope = std::min(classScope, props.prop(i).scope());
+  }
+
   std::string package_name = GetJavaPackageName(props);
   std::string class_name = GetJavaClassName(props);
 
@@ -285,23 +306,24 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
   writer.Write("%s", kGeneratedFileFooterComments);
   writer.Write("package %s;\n\n", package_name.c_str());
   writer.Write("%s", kJavaFileImports);
+  WriteJavaAnnotation(writer, classScope);
   writer.Write("public final class %s {\n", class_name.c_str());
   writer.Indent();
   writer.Write("private %s () {}\n\n", class_name.c_str());
   writer.Write("%s", kJavaParsersAndFormatters);
 
   for (int i = 0; i < props.prop_size(); ++i) {
-    const sysprop::Property& prop = props.prop(i);
-
-    // skip if scope is internal and we are generating public class
-    if (prop.scope() > scope) continue;
-
     writer.Write("\n");
+
+    const sysprop::Property& prop = props.prop(i);
 
     std::string prop_id = ApiNameToIdentifier(prop.api_name()).c_str();
     std::string prop_type = GetJavaTypeName(prop);
 
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
+      if (prop.scope() != classScope) {
+        WriteJavaAnnotation(writer, prop.scope());
+      }
       writer.Write("public static enum %s {\n",
                    GetJavaEnumTypeName(prop).c_str());
       writer.Indent();
@@ -334,8 +356,8 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("}\n\n");
     }
 
-    if (prop.deprecated()) {
-      writer.Write("@Deprecated\n");
+    if (prop.scope() != classScope) {
+      WriteJavaAnnotation(writer, prop.scope());
     }
 
     if (IsListProp(prop)) {
@@ -359,10 +381,10 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("}\n");
     }
 
-    if (prop.access() != sysprop::Readonly && scope == sysprop::Internal) {
+    if (prop.access() != sysprop::Readonly) {
       writer.Write("\n");
-      if (prop.deprecated()) {
-        writer.Write("@Deprecated\n");
+      if (classScope != sysprop::Internal) {
+        WriteJavaAnnotation(writer, sysprop::Internal);
       }
       writer.Write("public static void %s(%s value) {\n", prop_id.c_str(),
                    prop_type.c_str());
@@ -378,40 +400,43 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
   writer.Dedent();
   writer.Write("}\n");
 
-  return writer.Code();
+  *java_result = writer.Code();
+  return true;
 }
 
 }  // namespace
 
-Result<void> GenerateJavaLibrary(const std::string& input_file_path,
-                                 sysprop::Scope scope,
-                                 const std::string& java_output_dir) {
+bool GenerateJavaLibrary(const std::string& input_file_path,
+                         const std::string& java_output_dir, std::string* err) {
   sysprop::Properties props;
 
-  if (auto res = ParseProps(input_file_path); res) {
-    props = std::move(*res);
-  } else {
-    return res.error();
+  if (!ParseProps(input_file_path, &props, err)) {
+    return false;
   }
 
-  std::string java_result = GenerateJavaClass(props, scope);
+  std::string java_result;
+
+  if (!GenerateJavaClass(props, &java_result, err)) {
+    return false;
+  }
+
   std::string package_name = GetJavaPackageName(props);
   std::string java_package_dir =
       java_output_dir + "/" + std::regex_replace(package_name, kRegexDot, "/");
 
-  std::error_code ec;
-  std::filesystem::create_directories(java_package_dir, ec);
-  if (ec) {
-    return Errorf("Creating directory to {} failed: {}", java_package_dir,
-                  ec.message());
+  if (!IsDirectory(java_package_dir) && !CreateDirectories(java_package_dir)) {
+    *err = "Creating directory to " + java_package_dir +
+           " failed: " + strerror(errno);
+    return false;
   }
 
   std::string class_name = GetJavaClassName(props);
   std::string java_output_file = java_package_dir + "/" + class_name + ".java";
   if (!android::base::WriteStringToFile(java_result, java_output_file)) {
-    return ErrnoErrorf("Writing generated java class to {} failed",
-                       java_output_file);
+    *err = "Writing generated java class to " + java_output_file +
+           " failed: " + strerror(errno);
+    return false;
   }
 
-  return {};
+  return true;
 }

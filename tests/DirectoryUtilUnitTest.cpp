@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef SYSTEM_TOOLS_SYSPROP_CODE_WRITER_H_
-#define SYSTEM_TOOLS_SYSPROP_CODE_WRITER_H_
-
+#include <unistd.h>
 #include <string>
 
-class CodeWriter {
- public:
-  explicit CodeWriter(std::string indent);
+#include <android-base/test_utils.h>
+#include <gtest/gtest.h>
 
-  void Write(const char* format, ...) __attribute__((format(__printf__, 2, 3)));
+#include "Common.h"
 
-  void Indent();
-  void Dedent();
+using namespace std::string_literals;
 
-  const std::string& Code() const {
-    return code_;
-  }
+TEST(SyspropTest, CreateNestedDirectoryTest) {
+  TemporaryDir temp_dir;
 
- private:
-  CodeWriter(const CodeWriter&) = delete;
-  CodeWriter& operator=(const CodeWriter&) = delete;
+  ASSERT_FALSE(IsDirectory(temp_dir.path + "/test_dir/test_dir2/test_dir3"s));
+  ASSERT_TRUE(
+      CreateDirectories(temp_dir.path + "/test_dir/test_dir2/test_dir3"s));
+  ASSERT_TRUE(IsDirectory(temp_dir.path + "/test_dir/test_dir2/test_dir3"s));
 
-  int indent_level_ = 0;
-  bool start_of_line_ = true;
-  std::string code_;
-  const std::string indent_;
-};
-
-#endif  // SYSTEM_TOOLS_SYSPROP_CODE_WRITER_H_
+  rmdir((temp_dir.path + "/test_dir/test_dir2/test_dir3"s).c_str());
+  rmdir((temp_dir.path + "/test_dir/test_dir2"s).c_str());
+  rmdir((temp_dir.path + "/test_dir"s).c_str());
+}

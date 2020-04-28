@@ -17,7 +17,6 @@
 #define LOG_TAG "sysprop_cpp"
 
 #include <android-base/logging.h>
-#include <android-base/result.h>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -26,15 +25,12 @@
 
 #include "CppGen.h"
 
-using android::base::Errorf;
-using android::base::Result;
-
 namespace {
 
 struct Arguments {
   std::string input_file_path;
   std::string header_dir;
-  std::string public_header_dir;
+  std::string system_header_dir;
   std::string source_dir;
   std::string include_name;
 };
@@ -42,18 +38,17 @@ struct Arguments {
 [[noreturn]] void PrintUsage(const char* exe_name) {
   std::printf(
       "Usage: %s --header-dir dir --source-dir dir "
-      "--include-name name --public-header-dir dir "
+      "--include-name name --system-header-dir dir "
       "sysprop_file\n",
       exe_name);
   std::exit(EXIT_FAILURE);
 }
 
-Result<Arguments> ParseArgs(int argc, char* argv[]) {
-  Arguments ret;
+bool ParseArgs(int argc, char* argv[], Arguments* args, std::string* err) {
   for (;;) {
     static struct option long_options[] = {
         {"header-dir", required_argument, 0, 'h'},
-        {"public-header-dir", required_argument, 0, 'p'},
+        {"system-header-dir", required_argument, 0, 's'},
         {"source-dir", required_argument, 0, 'c'},
         {"include-name", required_argument, 0, 'n'},
     };
@@ -63,16 +58,16 @@ Result<Arguments> ParseArgs(int argc, char* argv[]) {
 
     switch (opt) {
       case 'h':
-        ret.header_dir = optarg;
+        args->header_dir = optarg;
         break;
-      case 'p':
-        ret.public_header_dir = optarg;
+      case 's':
+        args->system_header_dir = optarg;
         break;
       case 'c':
-        ret.source_dir = optarg;
+        args->source_dir = optarg;
         break;
       case 'n':
-        ret.include_name = optarg;
+        args->include_name = optarg;
         break;
       default:
         PrintUsage(argv[0]);
@@ -80,39 +75,39 @@ Result<Arguments> ParseArgs(int argc, char* argv[]) {
   }
 
   if (optind >= argc) {
-    return Errorf("No input file specified");
+    *err = "No input file specified";
+    return false;
   }
 
   if (optind + 1 < argc) {
-    return Errorf("More than one input file");
+    *err = "More than one input file";
+    return false;
   }
 
-  if (ret.header_dir.empty() || ret.public_header_dir.empty() ||
-      ret.source_dir.empty() || ret.include_name.empty()) {
+  if (args->header_dir.empty() || args->system_header_dir.empty() ||
+      args->source_dir.empty() || args->include_name.empty()) {
     PrintUsage(argv[0]);
   }
 
-  ret.input_file_path = argv[optind];
+  args->input_file_path = argv[optind];
 
-  return ret;
+  return true;
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
   Arguments args;
-  if (auto res = ParseArgs(argc, argv); res) {
-    args = std::move(*res);
-  } else {
-    LOG(ERROR) << argv[0] << ": " << res.error();
+  std::string err;
+  if (!ParseArgs(argc, argv, &args, &err)) {
+    std::fprintf(stderr, "%s: %s\n", argv[0], err.c_str());
     PrintUsage(argv[0]);
   }
 
-  if (auto res = GenerateCppFiles(args.input_file_path, args.header_dir,
-                                  args.public_header_dir, args.source_dir,
-                                  args.include_name);
-      !res) {
+  if (!GenerateCppFiles(args.input_file_path, args.header_dir,
+                        args.system_header_dir, args.source_dir,
+                        args.include_name, &err)) {
     LOG(FATAL) << "Error during generating cpp sysprop from "
-               << args.input_file_path << ": " << res.error();
+               << args.input_file_path << ": " << err;
   }
 }

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef SYSTEM_TOOLS_SYSPROP_CPPGEN_H_
+#define SYSTEM_TOOLS_SYSPROP_CPPGEN_H_
 
-#include <android-base/result.h>
 #include <string>
 
-android::base::Result<void> GenerateCppFiles(
-    const std::string& input_file_path, const std::string& header_dir,
-    const std::string& public_header_dir, const std::string& source_output_dir,
-    const std::string& include_name);
+bool GenerateCppFiles(const std::string& input_file_path,
+                      const std::string& header_dir,
+                      const std::string& system_header_dir,
+                      const std::string& source_output_dir,
+                      const std::string& include_name, std::string* err);
+
+#endif  // SYSTEM_TOOLS_SYSPROP_CPPGEN_H_
