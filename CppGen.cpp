@@ -58,7 +58,7 @@ constexpr const char* kCppSourceIncludes =
 #include <sys/system_properties.h>
 #else
 #include <android-base/properties.h>
-static int __system_property_set(const char* key, const char* value) {
+[[maybe_unused]] static int __system_property_set(const char* key, const char* value) {
     android::base::SetProperty(key, value);
     return 0;
 }
