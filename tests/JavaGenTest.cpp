@@ -48,7 +48,8 @@ prop {
     type: String
     prop_name: "vendor.test.string"
     scope: Public
-    access: ReadWrite
+    access: Readonly
+    legacy_prop_name: "vendor.old.string"
 }
 prop {
     api_name: "test_enum"
@@ -57,7 +58,6 @@ prop {
     enum_values: "a|b|c|D|e|f|G"
     scope: Internal
     access: ReadWrite
-    legacy_prop_name: "vendor.old.test_enum"
 }
 prop {
     api_name: "test_BOOLeaN"
@@ -238,11 +238,11 @@ public final class TestProperties {
 
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
+        if ("".equals(value)) {
+            Log.d("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
+            value = SystemProperties.get("vendor.old.string");
+        }
         return Optional.ofNullable(tryParseString(value));
-    }
-
-    public static void test_string(String value) {
-        SystemProperties.set("vendor.test.string", value == null ? "" : value.toString());
     }
 
     public static Optional<Boolean> test_BOOLeaN() {
@@ -431,11 +431,11 @@ public final class TestProperties {
 
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
+        if ("".equals(value)) {
+            Log.d("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
+            value = SystemProperties.get("vendor.old.string");
+        }
         return Optional.ofNullable(tryParseString(value));
-    }
-
-    public static void test_string(String value) {
-        SystemProperties.set("vendor.test.string", value == null ? "" : value.toString());
     }
 
     public static enum test_enum_values {
@@ -457,10 +457,6 @@ public final class TestProperties {
 
     public static Optional<test_enum_values> test_enum() {
         String value = SystemProperties.get("vendor.test.enum");
-        if ("".equals(value)) {
-            Log.d("TestProperties", "prop vendor.test.enum doesn't exist; fallback to legacy prop vendor.old.test_enum");
-            value = SystemProperties.get("vendor.old.test_enum");
-        }
         return Optional.ofNullable(tryParseEnum(test_enum_values.class, value));
     }
 

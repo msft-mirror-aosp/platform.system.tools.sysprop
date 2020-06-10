@@ -56,11 +56,14 @@ constexpr const char* kCppSourceIncludes =
 #include <strings.h>
 #ifdef __BIONIC__
 #include <sys/system_properties.h>
+[[maybe_unused]] static bool SetProp(const char* key, const char* value) {
+    return __system_property_set(key, value) == 0;
+}
 #else
 #include <android-base/properties.h>
-static int __system_property_set(const char* key, const char* value) {
+[[maybe_unused]] static bool SetProp(const char* key, const char* value) {
     android::base::SetProperty(key, value);
-    return 0;
+    return true;
 }
 #endif
 
@@ -439,7 +442,7 @@ std::string GenerateSource(const sysprop::Properties& props,
         }
       }
 
-      writer.Write("return __system_property_set(\"%s\", %s) == 0;\n",
+      writer.Write("return SetProp(\"%s\", %s) == 0;\n",
                    prop.prop_name().c_str(), format_expr);
       writer.Dedent();
       writer.Write("}\n");
