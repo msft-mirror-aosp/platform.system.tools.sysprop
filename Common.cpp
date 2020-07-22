@@ -184,25 +184,10 @@ Result<void> ValidateProp(const sysprop::Properties& props,
       break;
   }
 
-  switch (prop.access()) {
-    case sysprop::ReadWrite:
-      if (android::base::StartsWith(prop_name, "ro.")) {
-        return Errorf("Prop \"{}\" is ReadWrite and also have prefix \"ro.\"",
-                      prop_name);
-      }
-      break;
-    default:
-      /*
-       * TODO: Some properties don't have prefix "ro." but not written in any
-       * Java or C++ codes. They might be misnamed and should be readonly. Will
-       * uncomment this check after fixing them all / or making a whitelist for
-       * them
-      if (!android::base::StartsWith(prop_name, "ro.")) {
-        return Errorf("Prop \"{}\" isn't ReadWrite, but don't have prefix
-      \"ro.\"", prop_name);
-      }
-      */
-      break;
+  if (prop.access() == sysprop::ReadWrite &&
+      android::base::StartsWith(prop_name, "ro.")) {
+    return Errorf("Prop \"{}\" is ReadWrite and also have prefix \"ro.\"",
+                  prop_name);
   }
 
   if (prop.integer_as_bool() && !(prop.type() == sysprop::Boolean ||
