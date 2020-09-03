@@ -442,8 +442,8 @@ std::string GenerateSource(const sysprop::Properties& props,
         }
       }
 
-      writer.Write("return SetProp(\"%s\", %s) == 0;\n",
-                   prop.prop_name().c_str(), format_expr);
+      writer.Write("return SetProp(\"%s\", %s);\n", prop.prop_name().c_str(),
+                   format_expr);
       writer.Dedent();
       writer.Write("}\n");
     }
