@@ -1,0 +1,9 @@
+props {
+  module: "android.sysprop.test.TestProperties"
+  prop {
+    api_name: "test_bool_property"
+    access: ReadWrite
+    prop_name: "test.bool_property"
+    integer_as_bool: true
+  }
+}
