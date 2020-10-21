@@ -86,3 +86,9 @@ java_library {
     defaults: ["sysprop-library-stub-defaults"],
     soc_specific: true,
 }
+
+java_library {
+    name: "sysprop-library-stub-product",
+    defaults: ["sysprop-library-stub-defaults"],
+    product_specific: true,
+}
