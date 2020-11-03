@@ -74,9 +74,25 @@ private static Integer tryParseInteger(String str) {
     }
 }
 
+private static Integer tryParseUInt(String str) {
+    try {
+        return Integer.parseUnsignedInt(str);
+    } catch (NumberFormatException e) {
+        return null;
+    }
+}
+
 private static Long tryParseLong(String str) {
     try {
         return Long.valueOf(str);
+    } catch (NumberFormatException e) {
+        return null;
+    }
+}
+
+private static Long tryParseULong(String str) {
+    try {
+        return Long.parseUnsignedLong(str);
     } catch (NumberFormatException e) {
         return null;
     }
@@ -149,6 +165,26 @@ private static <T> String formatList(List<T> list) {
     return joiner.toString();
 }
 
+private static String formatUIntList(List<Integer> list) {
+    StringJoiner joiner = new StringJoiner(",");
+
+    for (Integer element : list) {
+        joiner.add(element == null ? "" : escape(Integer.toUnsignedString(element)));
+    }
+
+    return joiner.toString();
+}
+
+private static String formatULongList(List<Long> list) {
+    StringJoiner joiner = new StringJoiner(",");
+
+    for (Long element : list) {
+        joiner.add(element == null ? "" : escape(Long.toUnsignedString(element)));
+    }
+
+    return joiner.toString();
+}
+
 private static <T extends Enum<T>> String formatEnumList(List<T> list, Function<T, String> elementFormatter) {
     StringJoiner joiner = new StringJoiner(",");
 
@@ -181,8 +217,10 @@ std::string GetJavaTypeName(const sysprop::Property& prop) {
     case sysprop::Boolean:
       return "Boolean";
     case sysprop::Integer:
+    case sysprop::UInt:
       return "Integer";
     case sysprop::Long:
+    case sysprop::ULong:
       return "Long";
     case sysprop::Double:
       return "Double";
@@ -193,8 +231,10 @@ std::string GetJavaTypeName(const sysprop::Property& prop) {
     case sysprop::BooleanList:
       return "List<Boolean>";
     case sysprop::IntegerList:
+    case sysprop::UIntList:
       return "List<Integer>";
     case sysprop::LongList:
+    case sysprop::ULongList:
       return "List<Long>";
     case sysprop::DoubleList:
       return "List<Double>";
@@ -213,8 +253,12 @@ std::string GetParsingExpression(const sysprop::Property& prop) {
       return "Optional.ofNullable(tryParseBoolean(value))";
     case sysprop::Integer:
       return "Optional.ofNullable(tryParseInteger(value))";
+    case sysprop::UInt:
+      return "Optional.ofNullable(tryParseUInt(value))";
     case sysprop::Long:
       return "Optional.ofNullable(tryParseLong(value))";
+    case sysprop::ULong:
+      return "Optional.ofNullable(tryParseULong(value))";
     case sysprop::Double:
       return "Optional.ofNullable(tryParseDouble(value))";
     case sysprop::String:
@@ -250,6 +294,12 @@ std::string GetParsingExpression(const sysprop::Property& prop) {
     case sysprop::StringList:
       element_parser = "v -> tryParseString(v)";
       break;
+    case sysprop::UIntList:
+      element_parser = "v -> tryParseUInt(v)";
+      break;
+    case sysprop::ULongList:
+      element_parser = "v -> tryParseULong(v)";
+      break;
     default:
       __builtin_unreachable();
   }
@@ -268,16 +318,27 @@ std::string GetFormattingExpression(const sysprop::Property& prop) {
              "x -> x == null ? \"\" : (x ? \"1\" : \"0\"))"
              ".collect(Collectors.joining(\",\"))";
     }
-  } else if (prop.type() == sysprop::Enum) {
-    return "value.getPropValue()";
-  } else if (prop.type() == sysprop::EnumList) {
-    return "formatEnumList(value, " + GetJavaEnumTypeName(prop) +
-           "::getPropValue)";
-  } else if (IsListProp(prop)) {
-    return "formatList(value)";
-  } else {
-    return "value.toString()";
   }
+
+  switch (prop.type()) {
+    case sysprop::Enum:
+      return "value.getPropValue()";
+    case sysprop::EnumList:
+      return "formatEnumList(value, " + GetJavaEnumTypeName(prop) +
+             "::getPropValue)";
+    case sysprop::UInt:
+      return "Integer.toUnsignedString(value)";
+    case sysprop::ULong:
+      return "Long.toUnsignedString(value)";
+    case sysprop::UIntList:
+      return "formatUIntList(value)";
+    case sysprop::ULongList:
+      return "formatULongList(value)";
+    default:
+      break;
+  }
+
+  return IsListProp(prop) ? "formatList(value)" : "value.toString()";
 }
 
 std::string GetJavaPackageName(const sysprop::Properties& props) {
