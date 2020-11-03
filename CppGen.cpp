@@ -97,9 +97,19 @@ template <> [[maybe_unused]] std::optional<std::int32_t> DoParse(const char* str
     return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
+template <> [[maybe_unused]] std::optional<std::uint32_t> DoParse(const char* str) {
+    std::uint32_t ret;
+    return android::base::ParseUint(str, &ret) ? std::make_optional(ret) : std::nullopt;
+}
+
 template <> [[maybe_unused]] std::optional<std::int64_t> DoParse(const char* str) {
     std::int64_t ret;
     return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
+}
+
+template <> [[maybe_unused]] std::optional<std::uint64_t> DoParse(const char* str) {
+    std::uint64_t ret;
+    return android::base::ParseUint(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
@@ -153,7 +163,15 @@ template <typename T> inline T TryParse(const char* str) {
     return value ? std::to_string(*value) : "";
 }
 
+[[maybe_unused]] std::string FormatValue(const std::optional<std::uint32_t>& value) {
+    return value ? std::to_string(*value) : "";
+}
+
 [[maybe_unused]] std::string FormatValue(const std::optional<std::int64_t>& value) {
+    return value ? std::to_string(*value) : "";
+}
+
+[[maybe_unused]] std::string FormatValue(const std::optional<std::uint64_t>& value) {
     return value ? std::to_string(*value) : "";
 }
 
@@ -245,6 +263,10 @@ std::string GetCppPropTypeName(const sysprop::Property& prop) {
       return "std::optional<std::string>";
     case sysprop::Enum:
       return "std::optional<" + GetCppEnumName(prop) + ">";
+    case sysprop::UInt:
+      return "std::optional<std::uint32_t>";
+    case sysprop::ULong:
+      return "std::optional<std::uint64_t>";
     case sysprop::BooleanList:
       return "std::vector<std::optional<bool>>";
     case sysprop::IntegerList:
@@ -257,6 +279,10 @@ std::string GetCppPropTypeName(const sysprop::Property& prop) {
       return "std::vector<std::optional<std::string>>";
     case sysprop::EnumList:
       return "std::vector<std::optional<" + GetCppEnumName(prop) + ">>";
+    case sysprop::UIntList:
+      return "std::vector<std::optional<std::uint32_t>>";
+    case sysprop::ULongList:
+      return "std::vector<std::optional<std::uint64_t>>";
     default:
       __builtin_unreachable();
   }
