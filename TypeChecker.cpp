@@ -34,6 +34,9 @@ std::string SyspropTypeToContextType(const sysprop::Property& prop) {
     case sysprop::Integer:
     case sysprop::Long:
       return "int";
+    case sysprop::UInt:
+    case sysprop::ULong:
+      return "uint";
     case sysprop::Double:
       return "double";
     case sysprop::Boolean:
