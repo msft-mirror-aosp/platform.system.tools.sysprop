@@ -275,6 +275,8 @@ bool IsListProp(const sysprop::Property& prop) {
     case sysprop::DoubleList:
     case sysprop::StringList:
     case sysprop::EnumList:
+    case sysprop::UIntList:
+    case sysprop::ULongList:
       return true;
     default:
       return false;
