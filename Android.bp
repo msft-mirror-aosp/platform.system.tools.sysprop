@@ -64,6 +64,9 @@ cc_test_host {
            "TypeChecker.cpp",
            "tests/*.cpp"],
     whole_static_libs: ["com.android.sysprop.tests"],
+    test_options: {
+        unit_test: true,
+    },
     test_suites: ["general-tests"],
 }
 
