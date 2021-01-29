@@ -64,6 +64,9 @@ cc_test_host {
            "TypeChecker.cpp",
            "tests/*.cpp"],
     whole_static_libs: ["com.android.sysprop.tests"],
+    test_options: {
+        unit_test: true,
+    },
     test_suites: ["general-tests"],
 }
 
@@ -85,4 +88,10 @@ java_library {
     name: "sysprop-library-stub-vendor",
     defaults: ["sysprop-library-stub-defaults"],
     soc_specific: true,
+}
+
+java_library {
+    name: "sysprop-library-stub-product",
+    defaults: ["sysprop-library-stub-defaults"],
+    product_specific: true,
 }

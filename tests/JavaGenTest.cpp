@@ -142,9 +142,25 @@ public final class TestProperties {
         }
     }
 
+    private static Integer tryParseUInt(String str) {
+        try {
+            return Integer.parseUnsignedInt(str);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private static Long tryParseLong(String str) {
         try {
             return Long.valueOf(str);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static Long tryParseULong(String str) {
+        try {
+            return Long.parseUnsignedLong(str);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -212,6 +228,26 @@ public final class TestProperties {
 
         for (T element : list) {
             joiner.add(element == null ? "" : escape(element.toString()));
+        }
+
+        return joiner.toString();
+    }
+
+    private static String formatUIntList(List<Integer> list) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (Integer element : list) {
+            joiner.add(element == null ? "" : escape(Integer.toUnsignedString(element)));
+        }
+
+        return joiner.toString();
+    }
+
+    private static String formatULongList(List<Long> list) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (Long element : list) {
+            joiner.add(element == null ? "" : escape(Long.toUnsignedString(element)));
         }
 
         return joiner.toString();
@@ -326,9 +362,25 @@ public final class TestProperties {
         }
     }
 
+    private static Integer tryParseUInt(String str) {
+        try {
+            return Integer.parseUnsignedInt(str);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private static Long tryParseLong(String str) {
         try {
             return Long.valueOf(str);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static Long tryParseULong(String str) {
+        try {
+            return Long.parseUnsignedLong(str);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -396,6 +448,26 @@ public final class TestProperties {
 
         for (T element : list) {
             joiner.add(element == null ? "" : escape(element.toString()));
+        }
+
+        return joiner.toString();
+    }
+
+    private static String formatUIntList(List<Integer> list) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (Integer element : list) {
+            joiner.add(element == null ? "" : escape(Integer.toUnsignedString(element)));
+        }
+
+        return joiner.toString();
+    }
+
+    private static String formatULongList(List<Long> list) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (Long element : list) {
+            joiner.add(element == null ? "" : escape(Long.toUnsignedString(element)));
         }
 
         return joiner.toString();
