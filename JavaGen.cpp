@@ -428,7 +428,7 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("if (\"\".equals(value)) {\n");
       writer.Indent();
       writer.Write(
-          "Log.v(\"%s\", \"prop %s doesn't exist; fallback to legacy prop "
+          "Log.d(\"%s\", \"prop %s doesn't exist; fallback to legacy prop "
           "%s\");\n",
           class_name.c_str(), prop.prop_name().c_str(),
           prop.legacy_prop_name().c_str());
