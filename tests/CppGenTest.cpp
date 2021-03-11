@@ -438,7 +438,7 @@ T GetProp(const char* key, const char* legacy = nullptr) {
     value = android::base::GetProperty(key, "");
 #endif
     if (value.empty() && legacy) {
-        ALOGV("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
+        ALOGD("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
         return GetProp<T>(legacy);
     }
     return TryParse<T>(value.c_str());

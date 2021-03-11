@@ -275,7 +275,7 @@ public final class TestProperties {
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
         if ("".equals(value)) {
-            Log.v("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
+            Log.d("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
             value = SystemProperties.get("vendor.old.string");
         }
         return Optional.ofNullable(tryParseString(value));
@@ -504,7 +504,7 @@ public final class TestProperties {
     public static Optional<String> test_string() {
         String value = SystemProperties.get("vendor.test.string");
         if ("".equals(value)) {
-            Log.v("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
+            Log.d("TestProperties", "prop vendor.test.string doesn't exist; fallback to legacy prop vendor.old.string");
             value = SystemProperties.get("vendor.old.string");
         }
         return Optional.ofNullable(tryParseString(value));
