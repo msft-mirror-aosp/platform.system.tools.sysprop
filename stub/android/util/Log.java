@@ -18,7 +18,7 @@ package android.util;
 
 // Stub for cutting dependency from sysprop_library to framework.jar
 public class Log {
-    public static int d(String tag, String msg) {
+    public static int v(String tag, String msg) {
         return 0;
     }
     private Log() {
