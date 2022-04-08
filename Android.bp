@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
-
 cc_defaults {
     name: "sysprop-defaults",
     srcs: ["sysprop.proto", "Common.cpp", "CodeWriter.cpp"],
     shared_libs: ["libbase", "liblog"],
-    static_libs: ["libc++fs", "libpropertyinfoserializer"],
+    static_libs: ["libc++fs"],
     proto: {
         type: "full",
     },
@@ -53,30 +49,20 @@ cc_binary_host {
     srcs: ["ApiDumpMain.cpp"],
 }
 
-cc_binary_host {
-    name: "sysprop_type_checker",
-    defaults: ["sysprop-defaults"],
-    srcs: ["TypeChecker.cpp", "TypeCheckerMain.cpp"],
-}
-
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
     srcs: ["ApiChecker.cpp",
-           "CppGen.cpp",
+            "CppGen.cpp",
            "JavaGen.cpp",
-           "TypeChecker.cpp",
            "tests/*.cpp"],
-    whole_static_libs: ["com.android.sysprop.tests"],
-    test_options: {
-        unit_test: true,
-    },
+    test_suites: ["general-tests"],
 }
 
 java_defaults {
     name: "sysprop-library-stub-defaults",
     srcs: [
-        "stub/**/*.java",
+        "stub/android/os/SystemProperties.java",
     ],
     installable: false,
     sdk_version: "core_current",
@@ -91,10 +77,4 @@ java_library {
     name: "sysprop-library-stub-vendor",
     defaults: ["sysprop-library-stub-defaults"],
     soc_specific: true,
-}
-
-java_library {
-    name: "sysprop-library-stub-product",
-    defaults: ["sysprop-library-stub-defaults"],
-    product_specific: true,
 }

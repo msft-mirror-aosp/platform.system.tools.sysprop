@@ -48,8 +48,7 @@ prop {
     type: String
     prop_name: "android.test.string"
     scope: Public
-    access: Readonly
-    legacy_prop_name: "legacy.android.test.string"
+    access: ReadWrite
 }
 prop {
     api_name: "test_enum"
@@ -120,6 +119,7 @@ std::optional<std::int32_t> test_int();
 bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
+bool test_string(const std::optional<std::string>& value);
 
 enum class test_enum_values {
     A,
@@ -177,6 +177,7 @@ std::optional<std::int32_t> test_int();
 bool test_int(const std::optional<std::int32_t>& value);
 
 std::optional<std::string> test_string();
+bool test_string(const std::optional<std::string>& value);
 
 std::optional<bool> test_BOOLeaN();
 bool test_BOOLeaN(const std::optional<bool>& value);
@@ -206,18 +207,7 @@ constexpr const char* kExpectedSourceOutput =
 #include <utility>
 
 #include <strings.h>
-#ifdef __BIONIC__
 #include <sys/system_properties.h>
-[[maybe_unused]] static bool SetProp(const char* key, const char* value) {
-    return __system_property_set(key, value) == 0;
-}
-#else
-#include <android-base/properties.h>
-[[maybe_unused]] static bool SetProp(const char* key, const char* value) {
-    android::base::SetProperty(key, value);
-    return true;
-}
-#endif
 
 #include <android-base/parseint.h>
 #include <log/log.h>
@@ -310,19 +300,9 @@ template <> [[maybe_unused]] std::optional<std::int32_t> DoParse(const char* str
     return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
-template <> [[maybe_unused]] std::optional<std::uint32_t> DoParse(const char* str) {
-    std::uint32_t ret;
-    return android::base::ParseUint(str, &ret) ? std::make_optional(ret) : std::nullopt;
-}
-
 template <> [[maybe_unused]] std::optional<std::int64_t> DoParse(const char* str) {
     std::int64_t ret;
     return android::base::ParseInt(str, &ret) ? std::make_optional(ret) : std::nullopt;
-}
-
-template <> [[maybe_unused]] std::optional<std::uint64_t> DoParse(const char* str) {
-    std::uint64_t ret;
-    return android::base::ParseUint(str, &ret) ? std::make_optional(ret) : std::nullopt;
 }
 
 template <> [[maybe_unused]] std::optional<double> DoParse(const char* str) {
@@ -376,15 +356,7 @@ template <typename T> inline T TryParse(const char* str) {
     return value ? std::to_string(*value) : "";
 }
 
-[[maybe_unused]] std::string FormatValue(const std::optional<std::uint32_t>& value) {
-    return value ? std::to_string(*value) : "";
-}
-
 [[maybe_unused]] std::string FormatValue(const std::optional<std::int64_t>& value) {
-    return value ? std::to_string(*value) : "";
-}
-
-[[maybe_unused]] std::string FormatValue(const std::optional<std::uint64_t>& value) {
     return value ? std::to_string(*value) : "";
 }
 
@@ -425,23 +397,15 @@ template <typename T>
 }
 
 template <typename T>
-T GetProp(const char* key, const char* legacy = nullptr) {
-    std::string value;
-#ifdef __BIONIC__
+T GetProp(const char* key) {
+    T ret;
     auto pi = __system_property_find(key);
     if (pi != nullptr) {
         __system_property_read_callback(pi, [](void* cookie, const char*, const char* value, std::uint32_t) {
-            *static_cast<std::string*>(cookie) = value;
-        }, &value);
+            *static_cast<T*>(cookie) = TryParse<T>(value);
+        }, &ret);
     }
-#else
-    value = android::base::GetProperty(key, "");
-#endif
-    if (value.empty() && legacy) {
-        ALOGV("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
-        return GetProp<T>(legacy);
-    }
-    return TryParse<T>(value.c_str());
+    return ret;
 }
 
 }  // namespace
@@ -453,7 +417,7 @@ std::optional<double> test_double() {
 }
 
 bool test_double(const std::optional<double>& value) {
-    return SetProp("android.test_double", FormatValue(value).c_str());
+    return __system_property_set("android.test_double", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int32_t> test_int() {
@@ -461,11 +425,15 @@ std::optional<std::int32_t> test_int() {
 }
 
 bool test_int(const std::optional<std::int32_t>& value) {
-    return SetProp("android.test_int", FormatValue(value).c_str());
+    return __system_property_set("android.test_int", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::string> test_string() {
-    return GetProp<std::optional<std::string>>("android.test.string", "legacy.android.test.string");
+    return GetProp<std::optional<std::string>>("android.test.string");
+}
+
+bool test_string(const std::optional<std::string>& value) {
+    return __system_property_set("android.test.string", value ? value->c_str() : "") == 0;
 }
 
 std::optional<test_enum_values> test_enum() {
@@ -473,7 +441,7 @@ std::optional<test_enum_values> test_enum() {
 }
 
 bool test_enum(const std::optional<test_enum_values>& value) {
-    return SetProp("android.test.enum", FormatValue(value).c_str());
+    return __system_property_set("android.test.enum", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<bool> test_BOOLeaN() {
@@ -481,7 +449,7 @@ std::optional<bool> test_BOOLeaN() {
 }
 
 bool test_BOOLeaN(const std::optional<bool>& value) {
-    return SetProp("ro.android.test.b", FormatValue(value).c_str());
+    return __system_property_set("ro.android.test.b", FormatValue(value).c_str()) == 0;
 }
 
 std::optional<std::int64_t> android_os_test_long() {
@@ -489,7 +457,7 @@ std::optional<std::int64_t> android_os_test_long() {
 }
 
 bool android_os_test_long(const std::optional<std::int64_t>& value) {
-    return SetProp("android_os_test-long", FormatValue(value).c_str());
+    return __system_property_set("android_os_test-long", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<double>> test_double_list() {
@@ -497,7 +465,7 @@ std::vector<std::optional<double>> test_double_list() {
 }
 
 bool test_double_list(const std::vector<std::optional<double>>& value) {
-    return SetProp("test_double_list", FormatValue(value).c_str());
+    return __system_property_set("test_double_list", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<std::int32_t>> test_list_int() {
@@ -505,7 +473,7 @@ std::vector<std::optional<std::int32_t>> test_list_int() {
 }
 
 bool test_list_int(const std::vector<std::optional<std::int32_t>>& value) {
-    return SetProp("test_list_int", FormatValue(value).c_str());
+    return __system_property_set("test_list_int", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<std::string>> test_strlist() {
@@ -513,7 +481,7 @@ std::vector<std::optional<std::string>> test_strlist() {
 }
 
 bool test_strlist(const std::vector<std::optional<std::string>>& value) {
-    return SetProp("test_strlist", FormatValue(value).c_str());
+    return __system_property_set("test_strlist", FormatValue(value).c_str()) == 0;
 }
 
 std::vector<std::optional<el_values>> el() {
@@ -521,7 +489,7 @@ std::vector<std::optional<el_values>> el() {
 }
 
 bool el(const std::vector<std::optional<el_values>>& value) {
-    return SetProp("el", FormatValue(value).c_str());
+    return __system_property_set("el", FormatValue(value).c_str()) == 0;
 }
 
 }  // namespace android::sysprop::PlatformProperties

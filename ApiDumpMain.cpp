@@ -58,20 +58,8 @@ int main(int argc, char* argv[]) {
   }
 
   for (auto& [name, props] : modules) {
-    auto& prop_list = *props.mutable_prop();
-
-    // remove internals
-    auto is_internal = [](auto& prop) {
-      return prop.scope() == sysprop::Internal;
-    };
-    prop_list.erase(
-        std::remove_if(prop_list.begin(), prop_list.end(), is_internal),
-        prop_list.end());
-
-    if (prop_list.empty()) continue;
-
-    // ... and then sort to normalize
-    std::sort(prop_list.begin(), prop_list.end(),
+    // Sort properties to normalize
+    std::sort(props.mutable_prop()->begin(), props.mutable_prop()->end(),
               [](auto& a, auto& b) { return a.api_name() < b.api_name(); });
     *api.add_props() = std::move(props);
   }

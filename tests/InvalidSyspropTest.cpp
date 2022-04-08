@@ -152,41 +152,24 @@ prop {
 }
 )";
 
-constexpr const char* kTypeMismatch =
+/*
+ * TODO: Some properties don't have prefix "ro." but not written in any
+ * Java or C++ codes. They might be misnamed and should be readonly. Will
+ * uncomment this check after fixing them all / or making a whitelist for
+ * them
+constexpr const char* kNoRoPrefixForReadonlyProperty =
     R"(
-owner: Platform
-module: "android.os.Type"
+owner: Odm
+module: "com.android.OdmProp"
 prop {
-    prop_name: "prop"
-    type: Double
+    api_name: "i.am.readonly"
+    type: Long
     scope: Public
-    access: ReadWrite
-    api_name: "prop"
-}
-prop {
-    prop_name: "prop2"
-    legacy_prop_name: "prop"
-    type: Enum
-    enum_values: "a|b|c"
-    scope: Public
+    prop_name: "odm.i_am_readwrite"
     access: Readonly
-    api_name: "prop2"
 }
 )";
-
-constexpr const char* kLegacyNotReadonly =
-    R"(
-owner: Platform
-module: "android.os.Sysprop"
-prop {
-    prop_name: "prop"
-    type: String
-    scope: Public
-    access: ReadWrite
-    api_name: "prop"
-    legacy_prop_name: "legacy_prop"
-}
-)";
+*/
 
 constexpr const char* kTestCasesAndExpectedErrors[][2] = {
     {kDuplicatedField, "Duplicated API name \"dup\""},
@@ -205,9 +188,9 @@ constexpr const char* kTestCasesAndExpectedErrors[][2] = {
      "\"ro.\""},
     {kIntegerAsBoolWithWrongType,
      "Prop \"long.prop\" has integer_as_bool: true, but not a boolean"},
-    {kTypeMismatch, "Type error on prop \"prop\": it's Enum but was Double"},
-    {kLegacyNotReadonly,
-     "Prop \"prop\" which has legacy_prop_name must be Readonly"},
+    /*    {kNoRoPrefixForReadonlyProperty,
+         "Prop \"odm.i_am_readwrite\" isn't ReadWrite, but don't have prefix "
+         "\"ro.\""},*/
 };
 
 }  // namespace
