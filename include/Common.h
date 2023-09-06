@@ -32,3 +32,5 @@ android::base::Result<sysprop::Properties> ParseProps(
 android::base::Result<sysprop::SyspropLibraryApis> ParseApiFile(
     const std::string& file_path);
 std::string ToUpper(std::string str);
+std::string CamelCaseToSnakeCase(const std::string& str);
+std::string SnakeCaseToCamelCase(const std::string& str);
