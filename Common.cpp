@@ -360,3 +360,34 @@ std::string ApiNameToIdentifier(const std::string& name) {
   return (isdigit(name[0]) ? "_" : "") +
          std::regex_replace(name, kRegexAllowed, "_");
 }
+
+std::string SnakeCaseToCamelCase(const std::string& s) {
+  std::string result;
+  for (int i = 0; i < s.size(); ++i) {
+    if (s[i] == '_') continue;
+    char current = tolower(s[i]);  // Handle screaming snake case.
+    if (i == 0 || s[i - 1] == '_') {
+      current = toupper(current);
+    }
+    result += current;
+  }
+  return result;
+}
+
+std::string CamelCaseToSnakeCase(const std::string& s) {
+  // Desired behaviour: "CurrentAPIVersion" -> "current_api_version".
+  std::string result;
+  for (int i = 0; i < s.size(); ++i) {
+    char current = s[i];
+    char prev = (i > 0) ? s[i - 1] : 0;
+    char next = (i < s.size() - 1) ? s[i + 1] : 0;
+    if (prev && isupper(prev) && (!next || isupper(next) || !isalpha(next))) {
+      current = tolower(current);
+    }
+    if (i > 0 && isupper(current) && result[result.size() - 1] != '_') {
+      result += '_';
+    }
+    result += tolower(current);
+  }
+  return result;
+}
