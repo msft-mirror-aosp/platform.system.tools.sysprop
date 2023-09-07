@@ -150,7 +150,7 @@ pub fn test_int() -> Result<Option<i32>> {
 
 /// Sets the value of the property 'android.test_int', returns 'Ok' if successful.
 pub fn set_test_int(v: i32) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android.test_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -171,7 +171,7 @@ pub fn test_string() -> Result<Option<String>> {
 }
 
 /// Returns the value of the property 'ro.android.test.b' if set.
-pub fn test_BOOLeaN() -> Result<Option<bool>> {
+pub fn test_boo_lea_n() -> Result<Option<bool>> {
     let result = match system_properties::read("ro.android.test.b") {
         Err(e) => Err(SysPropError::FetchError(e)),
         Ok(Some(val)) => gen_parsers_and_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
@@ -181,7 +181,7 @@ pub fn test_BOOLeaN() -> Result<Option<bool>> {
 }
 
 /// Sets the value of the property 'ro.android.test.b', returns 'Ok' if successful.
-pub fn set_test_BOOLeaN(v: bool) -> Result<()> {
+pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
     let value = gen_parsers_and_formatters::format_bool(&v);
     system_properties::write("ro.android.test.b", value.as_str()).map_err(SysPropError::SetError)
 }
@@ -198,7 +198,7 @@ pub fn android_os_test_long() -> Result<Option<i64>> {
 
 /// Sets the value of the property 'android_os_test-long', returns 'Ok' if successful.
 pub fn set_android_os_test_long(v: i64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android_os_test-long", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -290,7 +290,7 @@ pub fn test_double() -> Result<Option<f64>> {
 
 /// Sets the value of the property 'android.test_double', returns 'Ok' if successful.
 pub fn set_test_double(v: f64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android.test_double", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -306,7 +306,7 @@ pub fn test_int() -> Result<Option<i32>> {
 
 /// Sets the value of the property 'android.test_int', returns 'Ok' if successful.
 pub fn set_test_int(v: i32) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android.test_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -337,7 +337,7 @@ pub enum TestEnumValues {
     G,
 }
 
-impl FromStr for TestEnumValues {
+impl std::str::FromStr for TestEnumValues {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -381,12 +381,12 @@ pub fn test_enum() -> Result<Option<TestEnumValues>> {
 
 /// Sets the value of the property 'android.test.enum', returns 'Ok' if successful.
 pub fn set_test_enum(v: TestEnumValues) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android.test.enum", value.as_str()).map_err(SysPropError::SetError)
 }
 
 /// Returns the value of the property 'ro.android.test.b' if set.
-pub fn test_BOOLeaN() -> Result<Option<bool>> {
+pub fn test_boo_lea_n() -> Result<Option<bool>> {
     let result = match system_properties::read("ro.android.test.b") {
         Err(e) => Err(SysPropError::FetchError(e)),
         Ok(Some(val)) => gen_parsers_and_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
@@ -396,7 +396,7 @@ pub fn test_BOOLeaN() -> Result<Option<bool>> {
 }
 
 /// Sets the value of the property 'ro.android.test.b', returns 'Ok' if successful.
-pub fn set_test_BOOLeaN(v: bool) -> Result<()> {
+pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
     let value = gen_parsers_and_formatters::format_bool(&v);
     system_properties::write("ro.android.test.b", value.as_str()).map_err(SysPropError::SetError)
 }
@@ -413,7 +413,7 @@ pub fn android_os_test_long() -> Result<Option<i64>> {
 
 /// Sets the value of the property 'android_os_test-long', returns 'Ok' if successful.
 pub fn set_android_os_test_long(v: i64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_value(&v);
+    let value = gen_parsers_and_formatters::format(&v);
     system_properties::write("android_os_test-long", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -469,19 +469,19 @@ pub fn set_test_strlist(v: &[String]) -> Result<()> {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, Ord)]
 pub enum ElValues {
-    ENU,
-    MVA,
-    LUE,
+    Enu,
+    Mva,
+    Lue,
 }
 
-impl FromStr for ElValues {
+impl std::str::FromStr for ElValues {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "enu" => Ok(ElValues::ENU),
-            "mva" => Ok(ElValues::MVA),
-            "lue" => Ok(ElValues::LUE),
+            "enu" => Ok(ElValues::Enu),
+            "mva" => Ok(ElValues::Mva),
+            "lue" => Ok(ElValues::Lue),
             _ => Err(format!("'{}' cannot be parsed for ElValues", s)),
         }
     }
@@ -490,9 +490,9 @@ impl FromStr for ElValues {
 impl fmt::Display for ElValues {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ElValues::ENU => write!(f, "enu"),
-            ElValues::MVA => write!(f, "mva"),
-            ElValues::LUE => write!(f, "lue"),
+            ElValues::Enu => write!(f, "enu"),
+            ElValues::Mva => write!(f, "mva"),
+            ElValues::Lue => write!(f, "lue"),
             _ => Err(fmt::Error),
         }
     }
