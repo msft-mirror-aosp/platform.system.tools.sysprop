@@ -192,12 +192,7 @@ pub type Result<T> = std::result::Result<T, SysPropError>;)";
 
 std::string GetRustEnumType(const sysprop::Property& prop) {
   std::string result = ApiNameToIdentifier(prop.api_name());
-  for (int i = 0; i < result.size(); ++i) {
-    if (i == 0 || result[i - 1] == '_') {
-      result[i] = toupper(result[i]);
-    }
-  }
-  return std::regex_replace(result, std::regex{"_"}, "") + "Values";
+  return SnakeCaseToCamelCase(result) + "Values";
 }
 
 std::string GetRustReturnType(const sysprop::Property& prop) {
@@ -313,14 +308,13 @@ std::string GetTypeFormatter(const sysprop::Property& prop) {
       }
       return "gen_parsers_and_formatters::format_bool";
     case sysprop::String:
-      return "gen_parsers_and_formatters::format";
     case sysprop::Integer:
     case sysprop::UInt:
     case sysprop::Long:
     case sysprop::ULong:
     case sysprop::Double:
     case sysprop::Enum:
-      return "gen_parsers_and_formatters::format_value";
+      return "gen_parsers_and_formatters::format";
     case sysprop::BooleanList:
       if (prop.integer_as_bool()) {
         return "gen_parsers_and_formatters::format_bool_list_as_int";
@@ -351,7 +345,8 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
     const sysprop::Property& prop = props.prop(i);
     if (prop.scope() > scope) continue;
 
-    std::string prop_id = ApiNameToIdentifier(prop.api_name());
+    std::string prop_id =
+        CamelCaseToSnakeCase(ApiNameToIdentifier(prop.api_name()));
 
     // Create enum.
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
@@ -364,13 +359,13 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       writer.Write("pub enum %s {\n", enum_type.c_str());
       writer.Indent();
       for (const std::string& value : values) {
-        writer.Write("%s,\n", ToUpper(value).c_str());
+        writer.Write("%s,\n", SnakeCaseToCamelCase(value).c_str());
       }
       writer.Dedent();
       writer.Write("}\n\n");
 
       // Enum parser.
-      writer.Write("impl FromStr for %s {\n", enum_type.c_str());
+      writer.Write("impl std::str::FromStr for %s {\n", enum_type.c_str());
       writer.Indent();
       writer.Write("type Err = String;\n\n");
       writer.Write("fn from_str(s: &str) -> Result<Self, Self::Err> {\n");
@@ -379,7 +374,7 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       writer.Indent();
       for (const std::string& value : values) {
         writer.Write("\"%s\" => Ok(%s::%s),\n", value.c_str(),
-                     enum_type.c_str(), ToUpper(value).c_str());
+                     enum_type.c_str(), SnakeCaseToCamelCase(value).c_str());
       }
       writer.Write("_ => Err(format!(\"'{}' cannot be parsed for %s\", s)),\n",
                    enum_type.c_str());
@@ -400,7 +395,7 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       writer.Indent();
       for (const std::string& value : values) {
         writer.Write("%s::%s => write!(f, \"%s\"),\n", enum_type.c_str(),
-                     ToUpper(value).c_str(), value.c_str());
+                     SnakeCaseToCamelCase(value).c_str(), value.c_str());
       }
       writer.Write("_ => Err(fmt::Error),\n");
       writer.Dedent();
