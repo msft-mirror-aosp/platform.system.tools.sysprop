@@ -368,7 +368,8 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       writer.Write("impl std::str::FromStr for %s {\n", enum_type.c_str());
       writer.Indent();
       writer.Write("type Err = String;\n\n");
-      writer.Write("fn from_str(s: &str) -> Result<Self, Self::Err> {\n");
+      writer.Write(
+          "fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {\n");
       writer.Indent();
       writer.Write("match s {\n");
       writer.Indent();
@@ -412,7 +413,9 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
     writer.Write("/// Returns the value of the property '%s' if set.\n",
                  prop.prop_name().c_str());
     if (prop.deprecated()) writer.Write("%s\n", kDeprecated);
-    writer.Write("pub fn %s() -> Result<Option<%s>> {\n", prop_id.c_str(),
+    // Escape prop id if it is similar to `type` keyword.
+    std::string identifier = (prop_id == "type") ? "r#" + prop_id : prop_id;
+    writer.Write("pub fn %s() -> Result<Option<%s>> {\n", identifier.c_str(),
                  prop_return_type.c_str());
     writer.Indent();
     // Try original property.

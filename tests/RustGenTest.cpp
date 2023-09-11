@@ -340,7 +340,7 @@ pub enum TestEnumValues {
 impl std::str::FromStr for TestEnumValues {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "a" => Ok(TestEnumValues::A),
             "b" => Ok(TestEnumValues::B),
@@ -477,7 +477,7 @@ pub enum ElValues {
 impl std::str::FromStr for ElValues {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "enu" => Ok(ElValues::Enu),
             "mva" => Ok(ElValues::Mva),
