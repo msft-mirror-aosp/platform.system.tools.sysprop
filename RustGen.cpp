@@ -353,6 +353,7 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       auto enum_type = GetRustEnumType(prop);
       auto values = ParseEnumValues(prop.enum_values());
 
+      writer.Write("#[allow(missing_docs)]\n");
       writer.Write(
           "#[derive(Copy, Clone, Debug, Eq, "
           "PartialEq, PartialOrd, Hash, Ord)]\n");
@@ -398,7 +399,6 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
         writer.Write("%s::%s => write!(f, \"%s\"),\n", enum_type.c_str(),
                      SnakeCaseToCamelCase(value).c_str(), value.c_str());
       }
-      writer.Write("_ => Err(fmt::Error),\n");
       writer.Dedent();
       writer.Write("}\n");
       writer.Dedent();
