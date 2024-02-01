@@ -326,6 +326,7 @@ pub fn test_string() -> Result<Option<String>> {
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, Ord)]
 pub enum TestEnumValues {
     A,
@@ -364,7 +365,6 @@ impl fmt::Display for TestEnumValues {
             TestEnumValues::E => write!(f, "e"),
             TestEnumValues::F => write!(f, "f"),
             TestEnumValues::G => write!(f, "G"),
-            _ => Err(fmt::Error),
         }
     }
 }
@@ -467,6 +467,7 @@ pub fn set_test_strlist(v: &[String]) -> Result<()> {
     system_properties::write("test_strlist", value.as_str()).map_err(SysPropError::SetError)
 }
 
+#[allow(missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, Ord)]
 pub enum ElValues {
     Enu,
@@ -493,7 +494,6 @@ impl fmt::Display for ElValues {
             ElValues::Enu => write!(f, "enu"),
             ElValues::Mva => write!(f, "mva"),
             ElValues::Lue => write!(f, "lue"),
-            _ => Err(fmt::Error),
         }
     }
 }
