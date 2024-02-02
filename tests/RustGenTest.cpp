@@ -108,8 +108,7 @@ constexpr const char* kExpectedPublicOutput =
 
 use std::fmt;
 use rustutils::system_properties;
-
-mod gen_parsers_and_formatters;
+use rustutils::system_properties::parsers_formatters;
 
 /// Errors this crate could generate.
 #[derive(Debug)]
@@ -142,7 +141,7 @@ pub type Result<T> = std::result::Result<T, SysPropError>;
 pub fn test_int() -> Result<Option<i32>> {
     let result = match system_properties::read("android.test_int") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -150,7 +149,7 @@ pub fn test_int() -> Result<Option<i32>> {
 
 /// Sets the value of the property 'android.test_int', returns 'Ok' if successful.
 pub fn set_test_int(v: i32) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android.test_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -158,14 +157,14 @@ pub fn set_test_int(v: i32) -> Result<()> {
 pub fn test_string() -> Result<Option<String>> {
     let result = match system_properties::read("android.test.string") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     if result.is_ok() { return result; }
     log::debug!("Failed to fetch the original property 'android.test.string' ('{}'), falling back to the legacy one 'legacy.android.test.string'.", result.unwrap_err());
     match system_properties::read("legacy.android.test.string") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     }
 }
@@ -174,7 +173,7 @@ pub fn test_string() -> Result<Option<String>> {
 pub fn test_boo_lea_n() -> Result<Option<bool>> {
     let result = match system_properties::read("ro.android.test.b") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -182,7 +181,7 @@ pub fn test_boo_lea_n() -> Result<Option<bool>> {
 
 /// Sets the value of the property 'ro.android.test.b', returns 'Ok' if successful.
 pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_bool(&v);
+    let value = parsers_formatters::format_bool(&v);
     system_properties::write("ro.android.test.b", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -190,7 +189,7 @@ pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
 pub fn android_os_test_long() -> Result<Option<i64>> {
     let result = match system_properties::read("android_os_test-long") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -198,7 +197,7 @@ pub fn android_os_test_long() -> Result<Option<i64>> {
 
 /// Sets the value of the property 'android_os_test-long', returns 'Ok' if successful.
 pub fn set_android_os_test_long(v: i64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android_os_test-long", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -206,7 +205,7 @@ pub fn set_android_os_test_long(v: i64) -> Result<()> {
 pub fn test_list_int() -> Result<Option<Vec<i32>>> {
     let result = match system_properties::read("test_list_int") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -214,7 +213,7 @@ pub fn test_list_int() -> Result<Option<Vec<i32>>> {
 
 /// Sets the value of the property 'test_list_int', returns 'Ok' if successful.
 pub fn set_test_list_int(v: &[i32]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("test_list_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -223,7 +222,7 @@ pub fn set_test_list_int(v: &[i32]) -> Result<()> {
 pub fn test_strlist() -> Result<Option<Vec<String>>> {
     let result = match system_properties::read("test_strlist") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -232,7 +231,7 @@ pub fn test_strlist() -> Result<Option<Vec<String>>> {
 /// Sets the value of the property 'test_strlist', returns 'Ok' if successful.
 #[deprecated]
 pub fn set_test_strlist(v: &[String]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("test_strlist", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -248,8 +247,7 @@ constexpr const char* kExpectedInternalOutput =
 
 use std::fmt;
 use rustutils::system_properties;
-
-mod gen_parsers_and_formatters;
+use rustutils::system_properties::parsers_formatters;
 
 /// Errors this crate could generate.
 #[derive(Debug)]
@@ -282,7 +280,7 @@ pub type Result<T> = std::result::Result<T, SysPropError>;
 pub fn test_double() -> Result<Option<f64>> {
     let result = match system_properties::read("android.test_double") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -290,7 +288,7 @@ pub fn test_double() -> Result<Option<f64>> {
 
 /// Sets the value of the property 'android.test_double', returns 'Ok' if successful.
 pub fn set_test_double(v: f64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android.test_double", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -298,7 +296,7 @@ pub fn set_test_double(v: f64) -> Result<()> {
 pub fn test_int() -> Result<Option<i32>> {
     let result = match system_properties::read("android.test_int") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -306,7 +304,7 @@ pub fn test_int() -> Result<Option<i32>> {
 
 /// Sets the value of the property 'android.test_int', returns 'Ok' if successful.
 pub fn set_test_int(v: i32) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android.test_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -314,18 +312,19 @@ pub fn set_test_int(v: i32) -> Result<()> {
 pub fn test_string() -> Result<Option<String>> {
     let result = match system_properties::read("android.test.string") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     if result.is_ok() { return result; }
     log::debug!("Failed to fetch the original property 'android.test.string' ('{}'), falling back to the legacy one 'legacy.android.test.string'.", result.unwrap_err());
     match system_properties::read("legacy.android.test.string") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, Ord)]
 pub enum TestEnumValues {
     A,
@@ -364,7 +363,6 @@ impl fmt::Display for TestEnumValues {
             TestEnumValues::E => write!(f, "e"),
             TestEnumValues::F => write!(f, "f"),
             TestEnumValues::G => write!(f, "G"),
-            _ => Err(fmt::Error),
         }
     }
 }
@@ -373,7 +371,7 @@ impl fmt::Display for TestEnumValues {
 pub fn test_enum() -> Result<Option<TestEnumValues>> {
     let result = match system_properties::read("android.test.enum") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -381,7 +379,7 @@ pub fn test_enum() -> Result<Option<TestEnumValues>> {
 
 /// Sets the value of the property 'android.test.enum', returns 'Ok' if successful.
 pub fn set_test_enum(v: TestEnumValues) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android.test.enum", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -389,7 +387,7 @@ pub fn set_test_enum(v: TestEnumValues) -> Result<()> {
 pub fn test_boo_lea_n() -> Result<Option<bool>> {
     let result = match system_properties::read("ro.android.test.b") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_bool(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -397,7 +395,7 @@ pub fn test_boo_lea_n() -> Result<Option<bool>> {
 
 /// Sets the value of the property 'ro.android.test.b', returns 'Ok' if successful.
 pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_bool(&v);
+    let value = parsers_formatters::format_bool(&v);
     system_properties::write("ro.android.test.b", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -405,7 +403,7 @@ pub fn set_test_boo_lea_n(v: bool) -> Result<()> {
 pub fn android_os_test_long() -> Result<Option<i64>> {
     let result = match system_properties::read("android_os_test-long") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -413,7 +411,7 @@ pub fn android_os_test_long() -> Result<Option<i64>> {
 
 /// Sets the value of the property 'android_os_test-long', returns 'Ok' if successful.
 pub fn set_android_os_test_long(v: i64) -> Result<()> {
-    let value = gen_parsers_and_formatters::format(&v);
+    let value = parsers_formatters::format(&v);
     system_properties::write("android_os_test-long", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -421,7 +419,7 @@ pub fn set_android_os_test_long(v: i64) -> Result<()> {
 pub fn test_double_list() -> Result<Option<Vec<f64>>> {
     let result = match system_properties::read("test_double_list") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -429,7 +427,7 @@ pub fn test_double_list() -> Result<Option<Vec<f64>>> {
 
 /// Sets the value of the property 'test_double_list', returns 'Ok' if successful.
 pub fn set_test_double_list(v: &[f64]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("test_double_list", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -437,7 +435,7 @@ pub fn set_test_double_list(v: &[f64]) -> Result<()> {
 pub fn test_list_int() -> Result<Option<Vec<i32>>> {
     let result = match system_properties::read("test_list_int") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -445,7 +443,7 @@ pub fn test_list_int() -> Result<Option<Vec<i32>>> {
 
 /// Sets the value of the property 'test_list_int', returns 'Ok' if successful.
 pub fn set_test_list_int(v: &[i32]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("test_list_int", value.as_str()).map_err(SysPropError::SetError)
 }
 
@@ -454,7 +452,7 @@ pub fn set_test_list_int(v: &[i32]) -> Result<()> {
 pub fn test_strlist() -> Result<Option<Vec<String>>> {
     let result = match system_properties::read("test_strlist") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -463,10 +461,11 @@ pub fn test_strlist() -> Result<Option<Vec<String>>> {
 /// Sets the value of the property 'test_strlist', returns 'Ok' if successful.
 #[deprecated]
 pub fn set_test_strlist(v: &[String]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("test_strlist", value.as_str()).map_err(SysPropError::SetError)
 }
 
+#[allow(missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, Ord)]
 pub enum ElValues {
     Enu,
@@ -493,7 +492,6 @@ impl fmt::Display for ElValues {
             ElValues::Enu => write!(f, "enu"),
             ElValues::Mva => write!(f, "mva"),
             ElValues::Lue => write!(f, "lue"),
-            _ => Err(fmt::Error),
         }
     }
 }
@@ -503,7 +501,7 @@ impl fmt::Display for ElValues {
 pub fn el() -> Result<Option<Vec<ElValues>>> {
     let result = match system_properties::read("el") {
         Err(e) => Err(SysPropError::FetchError(e)),
-        Ok(Some(val)) => gen_parsers_and_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
+        Ok(Some(val)) => parsers_formatters::parse_list(val.as_str()).map_err(SysPropError::ParseError).map(Some),
         Ok(None) => Ok(None),
     };
     result
@@ -512,7 +510,7 @@ pub fn el() -> Result<Option<Vec<ElValues>>> {
 /// Sets the value of the property 'el', returns 'Ok' if successful.
 #[deprecated]
 pub fn set_el(v: &[ElValues]) -> Result<()> {
-    let value = gen_parsers_and_formatters::format_list(v);
+    let value = parsers_formatters::format_list(v);
     system_properties::write("el", value.as_str()).map_err(SysPropError::SetError)
 }
 
