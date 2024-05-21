@@ -15,14 +15,25 @@
  */
 
 package {
+    default_team: "trendy_team_treble",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 cc_defaults {
     name: "sysprop-defaults",
-    srcs: ["sysprop.proto", "Common.cpp", "CodeWriter.cpp"],
-    shared_libs: ["libbase", "liblog"],
-    static_libs: ["libc++fs", "libpropertyinfoserializer"],
+    srcs: [
+        "sysprop.proto",
+        "Common.cpp",
+        "CodeWriter.cpp",
+    ],
+    shared_libs: [
+        "libbase",
+        "liblog",
+    ],
+    static_libs: [
+        "libc++fs",
+        "libpropertyinfoserializer",
+    ],
     proto: {
         type: "full",
     },
@@ -32,25 +43,37 @@ cc_defaults {
 cc_binary_host {
     name: "sysprop_cpp",
     defaults: ["sysprop-defaults"],
-    srcs: ["CppGen.cpp", "CppMain.cpp"],
+    srcs: [
+        "CppGen.cpp",
+        "CppMain.cpp",
+    ],
 }
 
 cc_binary_host {
     name: "sysprop_java",
     defaults: ["sysprop-defaults"],
-    srcs: ["JavaGen.cpp", "JavaMain.cpp"],
+    srcs: [
+        "JavaGen.cpp",
+        "JavaMain.cpp",
+    ],
 }
 
 cc_binary_host {
     name: "sysprop_rust",
     defaults: ["sysprop-defaults"],
-    srcs: ["RustGen.cpp", "RustMain.cpp"],
+    srcs: [
+        "RustGen.cpp",
+        "RustMain.cpp",
+    ],
 }
 
 cc_binary_host {
     name: "sysprop_api_checker",
     defaults: ["sysprop-defaults"],
-    srcs: ["ApiChecker.cpp", "ApiCheckerMain.cpp"],
+    srcs: [
+        "ApiChecker.cpp",
+        "ApiCheckerMain.cpp",
+    ],
 }
 
 cc_binary_host {
@@ -62,18 +85,23 @@ cc_binary_host {
 cc_binary_host {
     name: "sysprop_type_checker",
     defaults: ["sysprop-defaults"],
-    srcs: ["TypeChecker.cpp", "TypeCheckerMain.cpp"],
+    srcs: [
+        "TypeChecker.cpp",
+        "TypeCheckerMain.cpp",
+    ],
 }
 
 cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
-    srcs: ["ApiChecker.cpp",
-           "CppGen.cpp",
-           "JavaGen.cpp",
-           "RustGen.cpp",
-           "TypeChecker.cpp",
-           "tests/*.cpp"],
+    srcs: [
+        "ApiChecker.cpp",
+        "CppGen.cpp",
+        "JavaGen.cpp",
+        "RustGen.cpp",
+        "TypeChecker.cpp",
+        "tests/*.cpp",
+    ],
     whole_static_libs: ["libcom.android.sysprop.tests"],
     test_options: {
         unit_test: true,
