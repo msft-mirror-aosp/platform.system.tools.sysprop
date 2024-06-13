@@ -31,7 +31,6 @@ cc_defaults {
         "liblog",
     ],
     static_libs: [
-        "libc++fs",
         "libpropertyinfoserializer",
     ],
     proto: {
