@@ -21,6 +21,8 @@
 
 #include "RustGen.h"
 
+using namespace std::string_literals;
+
 namespace {
 
 constexpr const char* kTestSyspropFile =
@@ -460,11 +462,7 @@ pub fn set_el(v: &[ElValues]) -> std::result::Result<(), SysPropError> {
 
 )";
 
-}  // namespace
-
-using namespace std::string_literals;
-
-TEST(SyspropTest, RustGenTest) {
+void RustGenTest(sysprop::Scope scope, const char* expected_output) {
   TemporaryFile temp_file;
 
   // strlen is optimized for constants, so don't worry about it.
@@ -474,24 +472,26 @@ TEST(SyspropTest, RustGenTest) {
   temp_file.fd = -1;
 
   TemporaryDir temp_dir;
+  std::string rust_output_path = temp_dir.path + "/mod.rs"s;
 
-  std::pair<sysprop::Scope, const char*> tests[] = {
-      {sysprop::Scope::Internal, kExpectedInternalOutput},
-      {sysprop::Scope::Public, kExpectedPublicOutput},
-  };
+  ASSERT_RESULT_OK(GenerateRustLibrary(temp_file.path, scope, temp_dir.path));
 
-  for (auto [scope, expected_output] : tests) {
-    std::string rust_output_path = temp_dir.path + "/mod.rs"s;
+  std::string rust_output;
+  ASSERT_TRUE(
+      android::base::ReadFileToString(rust_output_path, &rust_output, true));
+  EXPECT_EQ(rust_output, expected_output);
 
-    ASSERT_RESULT_OK(GenerateRustLibrary(temp_file.path, scope, temp_dir.path));
+  unlink(rust_output.c_str());
+  rmdir((temp_dir.path + "/com/somecompany"s).c_str());
+  rmdir((temp_dir.path + "/com"s).c_str());
+}
 
-    std::string rust_output;
-    ASSERT_TRUE(
-        android::base::ReadFileToString(rust_output_path, &rust_output, true));
-    EXPECT_EQ(rust_output, expected_output);
+}  // namespace
 
-    unlink(rust_output.c_str());
-    rmdir((temp_dir.path + "/com/somecompany"s).c_str());
-    rmdir((temp_dir.path + "/com"s).c_str());
-  }
+TEST(SyspropTest, RustGenTestInternal) {
+  RustGenTest(sysprop::Scope::Internal, kExpectedInternalOutput);
+}
+
+TEST(SyspropTest, RustGenTestPublic) {
+  RustGenTest(sysprop::Scope::Public, kExpectedPublicOutput);
 }
