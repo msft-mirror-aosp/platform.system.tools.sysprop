@@ -199,6 +199,13 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
     std::string prop_id =
         CamelCaseToSnakeCase(ApiNameToIdentifier(prop.api_name()));
 
+    std::string prop_const = ToUpper(std::string(prop_id)) + "_PROP";
+
+    // Create constant.
+    writer.Write("/// The property name of the \"%s\" API.\n", prop_id.c_str());
+    writer.Write("pub const %s: &str = \"%s\";\n\n", prop_const.c_str(),
+                 prop.prop_name().c_str());
+
     // Create enum.
     if (prop.type() == sysprop::Enum || prop.type() == sysprop::EnumList) {
       auto enum_type = GetRustEnumType(prop);
@@ -271,8 +278,8 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
         identifier.c_str(), prop_return_type.c_str());
     writer.Indent();
     // Try original property.
-    writer.Write("let result = match system_properties::read(\"%s\") {\n",
-                 prop.prop_name().c_str());
+    writer.Write("let result = match system_properties::read(%s) {\n",
+                 prop_const.c_str());
     writer.Indent();
     writer.Write("Err(e) => Err(SysPropError::FetchError(e)),\n");
     writer.Write(
@@ -331,9 +338,8 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
       write_arg = "value.as_str()";
     }
     writer.Write(
-        "system_properties::write(\"%s\", "
-        "%s).map_err(SysPropError::SetError)\n",
-        prop.prop_name().c_str(), write_arg.c_str());
+        "system_properties::write(%s, %s).map_err(SysPropError::SetError)\n",
+        prop_const.c_str(), write_arg.c_str());
     writer.Dedent();
     writer.Write("}\n\n");
   }
