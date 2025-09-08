@@ -111,9 +111,9 @@ private static String tryParseString(String str) {
     return "".equals(str) ? null : str;
 }
 
-private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
+private static <T extends Enum<T>> T tryParseEnum(Function<String, T> enumParser, String str) {
     try {
-        return Enum.valueOf(enumType, str.toUpperCase(Locale.US));
+        return enumParser.apply(str.toUpperCase(Locale.US));
     } catch (IllegalArgumentException e) {
         return null;
     }
@@ -140,13 +140,13 @@ private static <T> List<T> tryParseList(Function<String, T> elementParser, Strin
     return ret;
 }
 
-private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
+private static <T extends Enum<T>> List<T> tryParseEnumList(Function<String, T> enumParser, String str) {
     if ("".equals(str)) return new ArrayList<>();
 
     List<T> ret = new ArrayList<>();
 
     for (String element : str.split(",")) {
-        ret.add(tryParseEnum(enumType, element));
+        ret.add(tryParseEnum(enumParser, element));
     }
 
     return ret;
@@ -266,10 +266,10 @@ std::string GetParsingExpression(const sysprop::Property& prop) {
       return "Optional.ofNullable(tryParseString(value))";
     case sysprop::Enum:
       return "Optional.ofNullable(tryParseEnum(" + GetJavaEnumTypeName(prop) +
-             ".class, value))";
+             "::valueOf, value))";
     case sysprop::EnumList:
       return "tryParseEnumList(" + GetJavaEnumTypeName(prop) +
-             ".class, "
+             "::valueOf, "
              "value)";
     default:
       break;
