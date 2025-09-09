@@ -179,9 +179,9 @@ public final class TestProperties {
         return "".equals(str) ? null : str;
     }
 
-    private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
+    private static <T extends Enum<T>> T tryParseEnum(Function<String, T> enumParser, String str) {
         try {
-            return Enum.valueOf(enumType, str.toUpperCase(Locale.US));
+            return enumParser.apply(str.toUpperCase(Locale.US));
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -208,13 +208,13 @@ public final class TestProperties {
         return ret;
     }
 
-    private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
+    private static <T extends Enum<T>> List<T> tryParseEnumList(Function<String, T> enumParser, String str) {
         if ("".equals(str)) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
         for (String element : str.split(",")) {
-            ret.add(tryParseEnum(enumType, element));
+            ret.add(tryParseEnum(enumParser, element));
         }
 
         return ret;
@@ -400,9 +400,9 @@ public final class TestProperties {
         return "".equals(str) ? null : str;
     }
 
-    private static <T extends Enum<T>> T tryParseEnum(Class<T> enumType, String str) {
+    private static <T extends Enum<T>> T tryParseEnum(Function<String, T> enumParser, String str) {
         try {
-            return Enum.valueOf(enumType, str.toUpperCase(Locale.US));
+            return enumParser.apply(str.toUpperCase(Locale.US));
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -429,13 +429,13 @@ public final class TestProperties {
         return ret;
     }
 
-    private static <T extends Enum<T>> List<T> tryParseEnumList(Class<T> enumType, String str) {
+    private static <T extends Enum<T>> List<T> tryParseEnumList(Function<String, T> enumParser, String str) {
         if ("".equals(str)) return new ArrayList<>();
 
         List<T> ret = new ArrayList<>();
 
         for (String element : str.split(",")) {
-            ret.add(tryParseEnum(enumType, element));
+            ret.add(tryParseEnum(enumParser, element));
         }
 
         return ret;
@@ -531,7 +531,7 @@ public final class TestProperties {
 
     public static Optional<test_enum_values> test_enum() {
         String value = SystemProperties.get("vendor.test.enum");
-        return Optional.ofNullable(tryParseEnum(test_enum_values.class, value));
+        return Optional.ofNullable(tryParseEnum(test_enum_values::valueOf, value));
     }
 
     public static void test_enum(test_enum_values value) {
@@ -601,7 +601,7 @@ public final class TestProperties {
     @Deprecated
     public static List<el_values> el() {
         String value = SystemProperties.get("vendor.el");
-        return tryParseEnumList(el_values.class, value);
+        return tryParseEnumList(el_values::valueOf, value);
     }
 
     @Deprecated
