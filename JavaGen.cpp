@@ -417,8 +417,13 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Write("public static %s %s() {\n", prop_type.c_str(),
                    prop_id.c_str());
     } else {
-      writer.Write("public static Optional<%s> %s() {\n", prop_type.c_str(),
-                   prop_id.c_str());
+      if (prop.default_value().empty()) {
+        writer.Write("public static Optional<%s> %s() {\n", prop_type.c_str(),
+                     prop_id.c_str());
+      } else {
+        writer.Write("public static %s %s() {\n", prop_type.c_str(),
+                     prop_id.c_str());
+      }
     }
     writer.Indent();
     writer.Write("String value = SystemProperties.get(\"%s\");\n",
@@ -438,7 +443,19 @@ std::string GenerateJavaClass(const sysprop::Properties& props,
       writer.Dedent();
       writer.Write("}\n");
     }
-    writer.Write("return %s;\n", GetParsingExpression(prop).c_str());
+    if (!prop.default_value().empty()) {
+      writer.Write("if (\"\".equals(value)) {\n");
+      writer.Indent();
+      writer.Write("value = \"%s\";\n", prop.default_value().c_str());
+      writer.Dedent();
+      writer.Write("}\n");
+    }
+    if (IsListProp(prop) || prop.default_value().empty()) {
+      writer.Write("return %s;\n", GetParsingExpression(prop).c_str());
+    } else {
+      writer.Write("return %s.orElse(null);\n",
+                   GetParsingExpression(prop).c_str());
+    }
     writer.Dedent();
     writer.Write("}\n");
 
