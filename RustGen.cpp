@@ -274,20 +274,36 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
     if (prop.deprecated()) writer.Write("%s\n", kDeprecated);
     // Escape prop id if it is similar to `type` keyword.
     std::string identifier = (prop_id == "type") ? "r#" + prop_id : prop_id;
-    writer.Write(
-        "pub fn %s() -> std::result::Result<Option<%s>, SysPropError> {\n",
-        identifier.c_str(), prop_return_type.c_str());
+    if (prop.default_value().empty()) {
+      writer.Write(
+          "pub fn %s() -> std::result::Result<Option<%s>, SysPropError> {\n",
+          identifier.c_str(), prop_return_type.c_str());
+    } else {
+      writer.Write("pub fn %s() -> std::result::Result<%s, SysPropError> {\n",
+                   identifier.c_str(), prop_return_type.c_str());
+    }
     writer.Indent();
     // Try original property.
     writer.Write("let result = match system_properties::read(%s) {\n",
                  prop_const.c_str());
     writer.Indent();
     writer.Write("Err(e) => Err(SysPropError::FetchError(e)),\n");
-    writer.Write(
-        "Ok(Some(val)) => "
-        "%s(val.as_str()).map_err(SysPropError::ParseError).map(Some),\n",
-        parser.c_str());
-    writer.Write("Ok(None) => Ok(None),\n");
+    if (prop.default_value().empty()) {
+      writer.Write(
+          "Ok(Some(val)) => "
+          "%s(val.as_str()).map_err(SysPropError::ParseError).map(Some),\n",
+          parser.c_str());
+      writer.Write("Ok(None) => Ok(None),\n");
+    } else {
+      writer.Write(
+          "Ok(Some(val)) => "
+          "%s(val.as_str()).map_err(SysPropError::ParseError),\n",
+          parser.c_str());
+      writer.Write(
+          "Ok(None) => "
+          "%s(\"%s\").map_err(SysPropError::ParseError),\n",
+          parser.c_str(), prop.default_value().c_str());
+    }
     writer.Dedent();
     writer.Write("};\n");
     // Try legacy property
@@ -302,11 +318,22 @@ std::string GenerateRustSource(sysprop::Properties props, sysprop::Scope scope) 
                    prop.legacy_prop_name().c_str());
       writer.Indent();
       writer.Write("Err(e) => Err(SysPropError::FetchError(e)),\n");
-      writer.Write(
-          "Ok(Some(val)) => "
-          "%s(val.as_str()).map_err(SysPropError::ParseError).map(Some),\n",
-          parser.c_str());
-      writer.Write("Ok(None) => Ok(None),\n");
+      if (prop.default_value().empty()) {
+        writer.Write(
+            "Ok(Some(val)) => "
+            "%s(val.as_str()).map_err(SysPropError::ParseError).map(Some),\n",
+            parser.c_str());
+        writer.Write("Ok(None) => Ok(None),\n");
+      } else {
+        writer.Write(
+            "Ok(Some(val)) => "
+            "%s(val.as_str()).map_err(SysPropError::ParseError),\n",
+            parser.c_str());
+        writer.Write(
+            "Ok(None) => "
+            "%s(\"%s\").map_err(SysPropError::ParseError),\n",
+            parser.c_str(), prop.default_value().c_str());
+      }
       writer.Dedent();
       writer.Write("}\n");
     } else {

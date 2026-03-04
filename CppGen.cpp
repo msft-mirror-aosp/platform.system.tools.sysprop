@@ -212,7 +212,7 @@ template <typename T>
 }
 
 template <typename T>
-T GetProp(const char* key, const char* legacy = nullptr) {
+T GetProp(const char* key, const char* legacy = nullptr, const char* default_val = nullptr) {
     std::string value;
 #ifdef __BIONIC__
     auto pi = __system_property_find(key);
@@ -227,6 +227,9 @@ T GetProp(const char* key, const char* legacy = nullptr) {
     if (value.empty() && legacy) {
         ALOGV("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
         return GetProp<T>(legacy);
+    }
+    if (value.empty() && default_val) {
+        value = default_val;
     }
     return TryParse<T>(value.c_str());
 }
@@ -250,6 +253,29 @@ std::string GetCppEnumName(const sysprop::Property& prop) {
 }
 
 std::string GetCppPropTypeName(const sysprop::Property& prop) {
+  if (!prop.default_value().empty()) {
+    switch (prop.type()) {
+      case sysprop::Boolean:
+        return "bool";
+      case sysprop::Integer:
+        return "std::int32_t";
+      case sysprop::Long:
+        return "std::int64_t";
+      case sysprop::Double:
+        return "double";
+      case sysprop::String:
+        return "std::string";
+      case sysprop::Enum:
+        return GetCppEnumName(prop);
+      case sysprop::UInt:
+        return "std::uint32_t";
+      case sysprop::ULong:
+        return "std::uint64_t";
+      default:
+        break;
+    }
+  }
+
   switch (prop.type()) {
     case sysprop::Boolean:
       return "std::optional<bool>";
@@ -436,12 +462,28 @@ std::string GenerateSource(const sysprop::Properties& props,
 
     writer.Write("%s %s() {\n", prop_type.c_str(), prop_id.c_str());
     writer.Indent();
-    if (legacy_name.empty()) {
-      writer.Write("return GetProp<%s>(\"%s\");\n", prop_type.c_str(),
-                   prop_name.c_str());
+    if (prop.default_value().empty()) {
+      if (legacy_name.empty()) {
+        writer.Write("return GetProp<%s>(\"%s\");\n", prop_type.c_str(),
+                     prop_name.c_str());
+      } else {
+        writer.Write("return GetProp<%s>(\"%s\", \"%s\");\n", prop_type.c_str(),
+                     prop_name.c_str(), legacy_name.c_str());
+      }
     } else {
-      writer.Write("return GetProp<%s>(\"%s\", \"%s\");\n", prop_type.c_str(),
-                   prop_name.c_str(), legacy_name.c_str());
+      std::string internal_type = prop_type;
+      if (!IsListProp(prop)) {
+        internal_type = "std::optional<" + prop_type + ">";
+      }
+      std::string legacy =
+          legacy_name.empty() ? "nullptr" : "\"" + legacy_name + "\"";
+      writer.Write("return GetProp<%s>(\"%s\", %s, \"%s\")",
+                   internal_type.c_str(), prop_name.c_str(), legacy.c_str(),
+                   prop.default_value().c_str());
+      if (!IsListProp(prop)) {
+        writer.Write(".value()");
+      }
+      writer.Write(";\n");
     }
     writer.Dedent();
     writer.Write("}\n");
@@ -455,7 +497,11 @@ std::string GenerateSource(const sysprop::Properties& props,
 
       // Specialized formatters here
       if (prop.type() == sysprop::String) {
-        format_expr = "value ? value->c_str() : \"\"";
+        if (!prop.default_value().empty()) {
+          format_expr = "value.c_str()";
+        } else {
+          format_expr = "value ? value->c_str() : \"\"";
+        }
       } else if (prop.integer_as_bool()) {
         if (prop.type() == sysprop::Boolean) {
           // optional<bool> -> optional<int>

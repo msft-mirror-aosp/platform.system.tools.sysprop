@@ -425,7 +425,7 @@ template <typename T>
 }
 
 template <typename T>
-T GetProp(const char* key, const char* legacy = nullptr) {
+T GetProp(const char* key, const char* legacy = nullptr, const char* default_val = nullptr) {
     std::string value;
 #ifdef __BIONIC__
     auto pi = __system_property_find(key);
@@ -440,6 +440,9 @@ T GetProp(const char* key, const char* legacy = nullptr) {
     if (value.empty() && legacy) {
         ALOGV("prop %s doesn't exist; fallback to legacy prop %s", key, legacy);
         return GetProp<T>(legacy);
+    }
+    if (value.empty() && default_val) {
+        value = default_val;
     }
     return TryParse<T>(value.c_str());
 }
