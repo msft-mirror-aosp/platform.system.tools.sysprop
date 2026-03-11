@@ -67,21 +67,6 @@ cc_binary_host {
 }
 
 cc_binary_host {
-    name: "sysprop_api_checker",
-    defaults: ["sysprop-defaults"],
-    srcs: [
-        "ApiChecker.cpp",
-        "ApiCheckerMain.cpp",
-    ],
-}
-
-cc_binary_host {
-    name: "sysprop_api_dump",
-    defaults: ["sysprop-defaults"],
-    srcs: ["ApiDumpMain.cpp"],
-}
-
-cc_binary_host {
     name: "sysprop_type_checker",
     defaults: ["sysprop-defaults"],
     srcs: [
@@ -94,7 +79,6 @@ cc_test_host {
     name: "sysprop_test",
     defaults: ["sysprop-defaults"],
     srcs: [
-        "ApiChecker.cpp",
         "CppGen.cpp",
         "JavaGen.cpp",
         "RustGen.cpp",
